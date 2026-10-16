@@ -1,0 +1,167 @@
+<title>Детальный пиксель</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap">
+<style>
+/* Layout: full-bleed canvas map, game HUD pinned to the corners like the reference art. Single dark look. */
+:root {
+  --ink: #0b1626;
+  --panel: rgba(10, 21, 37, 0.88);
+  --edge: #2a4466;
+  --edge-hi: #3d6290;
+  --text: #eef3fa;
+  --muted: #93a8c3;
+  --gold: #f2a516;
+  --gold-soft: #ffd88a;
+  --sea: #15376a;
+  --display: "Press Start 2P", ui-monospace, monospace;
+  --ui: "Pixelify Sans", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--sea); color: var(--text); font-family: var(--ui); overflow: hidden; }
+#app { position: relative; height: 100%; overflow: hidden; }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; image-rendering: pixelated; }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.px { background: var(--panel); box-shadow: 0 0 0 2px #050b14, inset 0 0 0 1px var(--edge); }
+
+.bar { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; padding-top: env(safe-area-inset-top, 0px); }
+.bar h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(11px, 1.6vw, 18px); letter-spacing: 0.12em; padding: 10px 22px 9px; background: var(--panel); box-shadow: 0 0 0 2px #050b14, inset 0 -1px 0 var(--edge); color: #f6f1e4; text-shadow: 2px 2px 0 #050b14; }
+
+.hud { position: absolute; display: flex; gap: 8px; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.tl { top: calc(54px + env(safe-area-inset-top, 0px)); left: 16px; flex-direction: column; align-items: flex-start; }
+.chip { font-family: var(--display); font-size: 12px; padding: 8px 12px 7px; letter-spacing: 0.06em; }
+.coord { font-size: 13px; color: var(--muted); padding: 4px 8px; font-variant-numeric: tabular-nums; }
+
+.right { top: 50%; right: 16px; transform: translateY(-50%); flex-direction: column; align-items: stretch; }
+.zbtn { width: 100%; height: 38px; border: 0; cursor: pointer; font-size: 22px; font-weight: 700; }
+.zbtn:hover, .ladder button:hover { background: #17304f; }
+.ladder { display: flex; flex-direction: column; }
+.ladder button { border: 0; background: transparent; cursor: pointer; padding: 9px 14px; text-align: left; font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 9px; }
+.ladder button::before { content: ""; width: 8px; height: 8px; background: var(--edge-hi); box-shadow: 0 0 0 1px #050b14; flex: none; }
+.ladder button.on { color: var(--text); }
+.ladder button.on::before { background: var(--gold); }
+#zoomVal { font-size: 11px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+
+.bl { left: 16px; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); flex-direction: column; align-items: flex-start; }
+.scale { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 13px; }
+#scaleBar { height: 6px; border: 2px solid var(--text); border-top: 0; min-width: 20px; }
+.stats { display: flex; gap: 14px; padding: 6px 10px; font-size: 13px; color: var(--muted); }
+.stats b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.bottom { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(6, 13, 24, 0.85), rgba(6, 13, 24, 0)); }
+.cta { flex: none; border: 0; cursor: pointer; padding: 10px 14px; font-weight: 700; font-size: 14px; background: var(--gold); color: #2a1a02; box-shadow: 0 0 0 2px #050b14, inset -3px -3px 0 #b8770a, inset 3px 3px 0 #ffd27a; }
+.cta:hover { filter: brightness(1.08); }
+.ghost { flex: none; border: 0; cursor: pointer; padding: 10px 12px; font-size: 14px; }
+#jumps { display: flex; gap: 6px; overflow-x: auto; min-width: 0; scrollbar-width: none; padding: 3px; }
+#jumps::-webkit-scrollbar { display: none; }
+#jumps button { flex: none; border: 0; cursor: pointer; padding: 8px 11px; font-size: 14px; background: var(--panel); box-shadow: 0 0 0 2px #050b14, inset 0 0 0 1px var(--edge); }
+#jumps button:hover { background: #17304f; }
+
+#card { position: absolute; top: calc(54px + env(safe-area-inset-top, 0px)); right: 128px; width: 290px; padding: 14px; display: grid; grid-template-columns: 88px 1fr; gap: 12px 14px; }
+#cAva { width: 88px; height: 88px; image-rendering: pixelated; box-shadow: 0 0 0 2px #050b14, 0 0 0 4px var(--gold); }
+.who { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#cName { font-family: var(--display); font-size: 14px; line-height: 1.4; color: var(--gold-soft); }
+#cMeta, #cCity, #cTime { font-size: 14px; color: var(--muted); }
+#cCity { color: var(--text); }
+.act { grid-column: 1 / -1; font-size: 15px; padding: 8px 10px; background: rgba(242, 165, 22, 0.12); box-shadow: inset 2px 0 0 var(--gold); }
+.act small { display: block; color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+.bars { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.meter { height: 8px; background: #050b14; box-shadow: inset 0 0 0 1px var(--edge); }
+.meter i { display: block; height: 100%; }
+#bEnergy { background: #5fd0e6; } #bFood { background: #8bd16a; } #bMood { background: #f29ac0; }
+.cbtns { grid-column: 1 / -1; display: flex; gap: 8px; }
+.cbtns button { flex: 1; border: 0; cursor: pointer; padding: 9px 8px; font-size: 14px; background: #17304f; box-shadow: 0 0 0 2px #050b14, inset 0 0 0 1px var(--edge-hi); }
+.cbtns button[aria-pressed="true"] { background: var(--gold); color: #2a1a02; }
+#cClose { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
+
+#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink); z-index: 10; }
+.ld { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 0 16px; text-align: center; }
+.ld .logo { font-family: var(--display); font-size: clamp(14px, 3vw, 22px); letter-spacing: 0.12em; text-shadow: 3px 3px 0 #050b14; }
+#loadMsg { color: var(--muted); font-size: 16px; }
+.ld .dots { display: flex; gap: 6px; }
+.ld .dots i { width: 10px; height: 10px; background: var(--gold); animation: blink 1s steps(2) infinite; }
+.ld .dots i:nth-child(2) { animation-delay: 0.2s; } .ld .dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 50% { opacity: 0.2; } }
+.hint { position: absolute; left: 50%; top: calc(58px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); font-size: 13px; color: var(--muted); padding: 6px 12px; pointer-events: none; white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .right { top: auto; bottom: calc(128px + env(safe-area-inset-bottom, 0px)); transform: none; }
+  .ladder button { padding: 8px 10px; font-size: 13px; }
+  .bl { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); }
+  .stats { flex-wrap: wrap; gap: 4px 10px; max-width: 220px; }
+  #card { left: 16px; right: 16px; width: auto; top: auto; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); grid-template-columns: 64px 1fr; z-index: 3; }
+  #cAva { width: 64px; height: 64px; }
+  .hint { display: none; }
+  .ghost { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .ld .dots i { animation: none; } }
+</style>
+
+<div id="app">
+  <canvas id="map" aria-label="Пиксельная карта мира: колесо или щипок для зума, перетаскивание для перемещения"></canvas>
+  <header class="bar"><h1>ДЕТАЛЬНЫЙ ПИКСЕЛЬ</h1></header>
+  <div class="hint px">Колесо — зум · тянуть — двигать · клик по жителю — карточка</div>
+
+  <div class="hud tl">
+    <span class="chip px" id="lvl">Мир</span>
+    <span class="coord" id="coord"></span>
+  </div>
+
+  <div class="hud right">
+    <div class="px" style="display:flex;flex-direction:column">
+      <button class="zbtn" id="zin" type="button" aria-label="Приблизить">+</button>
+      <div class="ladder" role="group" aria-label="Масштаб">
+        <button type="button">Мир</button>
+        <button type="button">Регион</button>
+        <button type="button">Город</button>
+        <button type="button">Улица</button>
+      </div>
+      <button class="zbtn" id="zout" type="button" aria-label="Отдалить">−</button>
+    </div>
+    <span id="zoomVal"></span>
+  </div>
+
+  <div class="hud bl">
+    <div class="scale px"><div id="scaleBar"></div><span id="scaleLbl"></span></div>
+    <div class="stats px"><span>Время <b id="clock">08:40</b></span><span>Жителей <b id="pop">0</b></span><span>Городов <b id="ncities">0</b></span></div>
+  </div>
+
+  <div class="bottom">
+    <button class="cta" id="tour" type="button">▶ Полёт к Дарье</button>
+    <button class="ghost px" id="rand" type="button">Случайный житель</button>
+    <nav id="jumps" aria-label="Быстрый переход к городу"></nav>
+  </div>
+
+  <aside id="card" class="px" hidden aria-live="polite">
+    <button id="cClose" type="button" aria-label="Закрыть карточку">×</button>
+    <canvas id="cAva" width="88" height="88"></canvas>
+    <div class="who">
+      <div id="cName"></div>
+      <div id="cMeta"></div>
+      <div id="cCity"></div>
+      <div id="cTime"></div>
+    </div>
+    <div class="act"><small>Сейчас</small><span id="cAct"></span></div>
+    <div class="bars">
+      <span>Энергия</span><div class="meter"><i id="bEnergy"></i></div>
+      <span>Сытость</span><div class="meter"><i id="bFood"></i></div>
+      <span>Настроение</span><div class="meter"><i id="bMood"></i></div>
+    </div>
+    <div class="cbtns">
+      <button id="cGo" type="button">К жителю</button>
+      <button id="cFollow" type="button" aria-pressed="false">Следить</button>
+    </div>
+  </aside>
+
+  <div id="loading"><div class="ld"><div class="logo">ДЕТАЛЬНЫЙ ПИКСЕЛЬ</div><div class="dots"><i></i><i></i><i></i></div><div id="loadMsg">Загружаем планету…</div></div></div>
+</div>
+
+<script type="application/json" id="land">/*LAND*/</script>
+<script type="application/json" id="spr">/*SPR*/</script>
+<script id="gen">/*GEN*/</script>
+<script>/*MAIN*/</script>

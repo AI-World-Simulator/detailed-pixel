@@ -1,0 +1,8 @@
+# local work and heavy previews
+.claude/
+prev/
+baked/
+*.png
+!docs/*.png
+!data/*.png
+.DS_Store

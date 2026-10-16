@@ -1,0 +1,951 @@
+{
+ "tree": {
+  "src": [
+   "cut/q_trees1",
+   "cut/q_trees2",
+   "cut/qtrees"
+  ],
+  "widths": [
+   8,
+   10,
+   12,
+   15,
+   18,
+   22,
+   27,
+   33,
+   40,
+   48,
+   58,
+   70
+  ],
+  "colors": 16,
+  "override": {
+   "cut/q_trees2/000.png": "y",
+   "cut/q_trees2/001.png": "o",
+   "cut/q_trees2/002.png": "y",
+   "cut/q_trees2/003.png": "g",
+   "cut/q_trees2/004.png": "k",
+   "cut/q_trees2/005.png": "p",
+   "cut/q_trees2/007.png": "d",
+   "cut/q_trees2/008.png": "d",
+   "cut/q_trees1/000.png": "g",
+   "cut/q_trees1/001.png": "g",
+   "cut/q_trees1/002.png": "g",
+   "cut/q_trees1/003.png": "g",
+   "cut/q_trees1/004.png": "g",
+   "cut/q_trees1/005.png": "g",
+   "cut/q_trees1/006.png": "g",
+   "cut/q_trees1/007.png": "g",
+   "cut/q_trees1/008.png": "g",
+   "cut/qtrees/000.png": "d",
+   "cut/qtrees/001.png": "d",
+   "cut/qtrees/002.png": "d",
+   "cut/qtrees/003.png": "d",
+   "cut/qtrees/004.png": "d",
+   "cut/qtrees/005.png": "d",
+   "cut/qtrees/006.png": "d",
+   "cut/qtrees/007.png": "d",
+   "cut/qtrees/008.png": "d"
+  }
+ },
+ "tex": {
+  "tex": {
+   "metal": {
+    "f": "kit/q/roofs.png",
+    "box": [
+     528,
+     530,
+     1008,
+     1000
+    ]
+   },
+   "terra": {
+    "f": "kit/q/roofs.png",
+    "box": [
+     15,
+     545,
+     485,
+     958
+    ]
+   },
+   "flat1": {
+    "f": "kit/q3/flatroofs.png",
+    "box": [
+     15,
+     15,
+     495,
+     495
+    ],
+    "blend": true
+   },
+   "flat2": {
+    "f": "kit/q3/flatroofs.png",
+    "box": [
+     525,
+     15,
+     1005,
+     495
+    ],
+    "blend": true
+   },
+   "flat3": {
+    "f": "kit/q3/flatroofs.png",
+    "box": [
+     15,
+     527,
+     495,
+     1005
+    ],
+    "blend": true
+   },
+   "flat4": {
+    "f": "kit/q3/flatroofs.png",
+    "box": [
+     527,
+     527,
+     1005,
+     1005
+    ],
+    "blend": true
+   }
+  },
+  "widths": [
+   8,
+   10,
+   12,
+   16,
+   20,
+   26,
+   32,
+   40,
+   52,
+   64
+  ],
+  "colors": 12
+ },
+ "fk": {
+  "scales": [
+   2,
+   2.5,
+   3,
+   3.6,
+   4.3,
+   5.2,
+   6.2,
+   7.5,
+   9,
+   11,
+   13,
+   16
+  ],
+  "stf": 0.42,
+  "colors": 24,
+  "fk": [
+   {
+    "cat": "msk",
+    "f": "kit/q/fac_msk1.png",
+    "bx": [
+     13,
+     139,
+     264,
+     390,
+     515,
+     640,
+     766,
+     891,
+     1016,
+     1142,
+     1269,
+     1394,
+     1520
+    ],
+    "corn": [
+     20,
+     150
+    ],
+    "floor": [
+     350,
+     577
+    ],
+    "ground": [
+     780,
+     1000
+    ],
+    "ppm": 66.8,
+    "gm": {
+     "S": [
+      [
+       37,
+       247
+      ],
+      [
+       427,
+       635
+      ]
+     ],
+     "s": [
+      [
+       285,
+       368
+      ]
+     ],
+     "D": [
+      [
+       680,
+       860
+      ]
+     ],
+     "A": [
+      [
+       862,
+       1050
+      ]
+     ],
+     "W": [
+      [
+       1150,
+       1265
+      ],
+      [
+       1270,
+       1395
+      ],
+      [
+       1395,
+       1520
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "msk",
+    "f": "kit/q/fac_msk2.png",
+    "bx": [
+     27,
+     139,
+     253,
+     372,
+     497,
+     628,
+     770,
+     938,
+     1100,
+     1237,
+     1374,
+     1510
+    ],
+    "corn": [
+     5,
+     80
+    ],
+    "floor": [
+     440,
+     627
+    ],
+    "ground": [
+     800,
+     1006
+    ],
+    "ppm": 55,
+    "gm": {
+     "S": [
+      [
+       37,
+       197
+      ],
+      [
+       349,
+       467
+      ],
+      [
+       496,
+       613
+      ],
+      [
+       636,
+       747
+      ],
+      [
+       1083,
+       1193
+      ],
+      [
+       1217,
+       1360
+      ],
+      [
+       1383,
+       1503
+      ]
+     ],
+     "s": [
+      [
+       227,
+       327
+      ]
+     ],
+     "D": [
+      [
+       796,
+       893
+      ],
+      [
+       949,
+       1049
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "stal",
+    "f": "kit/q/fac_msk3.png",
+    "bx": [
+     61,
+     125,
+     194,
+     275,
+     363,
+     449,
+     537,
+     626,
+     713,
+     804,
+     894,
+     982,
+     1073,
+     1161,
+     1247,
+     1332,
+     1405,
+     1469
+    ],
+    "corn": [
+     27,
+     127
+    ],
+    "floor": [
+     420,
+     520
+    ],
+    "ground": [
+     800,
+     980
+    ],
+    "ppm": 31,
+    "gm": {
+     "S": [
+      [
+       80,
+       170
+      ],
+      [
+       189,
+       260
+      ],
+      [
+       280,
+       350
+      ],
+      [
+       504,
+       593
+      ],
+      [
+       611,
+       700
+      ],
+      [
+       867,
+       1047
+      ],
+      [
+       1083,
+       1153
+      ],
+      [
+       1173,
+       1247
+      ],
+      [
+       1264,
+       1333
+      ],
+      [
+       1353,
+       1453
+      ]
+     ],
+     "s": [
+      [
+       383,
+       451
+      ],
+      [
+       736,
+       813
+      ]
+     ],
+     "D": [
+      [
+       383,
+       451
+      ],
+      [
+       736,
+       813
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "msk",
+    "keep": true,
+    "f": "kit/q2/fq_mint.png",
+    "bx": [
+     25,
+     190,
+     355,
+     520,
+     685,
+     849,
+     1012,
+     1175,
+     1340,
+     1505
+    ],
+    "corn": [
+     20,
+     120
+    ],
+    "floor": [
+     287,
+     480
+    ],
+    "ground": [
+     693,
+     940
+    ],
+    "ppm": 58,
+    "gm": {
+     "S": [
+      [
+       47,
+       193
+      ],
+      [
+       367,
+       500
+      ]
+     ],
+     "s": [
+      [
+       224,
+       327
+      ]
+     ],
+     "W": [
+      [
+       560,
+       640
+      ],
+      [
+       1053,
+       1133
+      ]
+     ],
+     "D": [
+      [
+       673,
+       840
+      ]
+     ],
+     "A": [
+      [
+       870,
+       1013
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "msk",
+    "keep": true,
+    "f": "kit/q2/fq_blue.png",
+    "bx": [
+     92,
+     228,
+     368,
+     522,
+     683,
+     846,
+     1008,
+     1155,
+     1292,
+     1428
+    ],
+    "corn": [
+     60,
+     133
+    ],
+    "floor": [
+     287,
+     487
+    ],
+    "ground": [
+     707,
+     960
+    ],
+    "ppm": 60,
+    "gm": {
+     "S": [
+      [
+       104,
+       349
+      ],
+      [
+       544,
+       816
+      ]
+     ],
+     "s": [
+      [
+       387,
+       500
+      ]
+     ],
+     "D": [
+      [
+       853,
+       1000
+      ],
+      [
+       387,
+       500
+      ]
+     ],
+     "W": [
+      [
+       1047,
+       1133
+      ],
+      [
+       1184,
+       1267
+      ],
+      [
+       1320,
+       1400
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "msk",
+    "keep": true,
+    "f": "kit/q2/fq_ochre.png",
+    "bx": [
+     67,
+     236,
+     405,
+     575,
+     750,
+     923,
+     1090,
+     1269,
+     1460
+    ],
+    "corn": [
+     87,
+     147
+    ],
+    "floor": [
+     367,
+     600
+    ],
+    "ground": [
+     627,
+     907
+    ],
+    "ppm": 66,
+    "gm": {
+     "S": [
+      [
+       67,
+       220
+      ],
+      [
+       237,
+       396
+      ],
+      [
+       584,
+       733
+      ],
+      [
+       929,
+       1080
+      ],
+      [
+       1100,
+       1253
+      ]
+     ],
+     "s": [
+      [
+       416,
+       547
+      ],
+      [
+       757,
+       913
+      ]
+     ],
+     "D": [
+      [
+       1300,
+       1467
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "msk",
+    "keep": true,
+    "f": "kit/q2/fq_brick.png",
+    "bx": [
+     41,
+     168,
+     294,
+     422,
+     550,
+     677,
+     806,
+     935,
+     1061,
+     1188,
+     1324,
+     1470
+    ],
+    "corn": [
+     20,
+     73
+    ],
+    "floor": [
+     287,
+     507
+    ],
+    "ground": [
+     707,
+     960
+    ],
+    "ppm": 67,
+    "gm": {
+     "S": [
+      [
+       53,
+       273
+      ],
+      [
+       527,
+       663
+      ]
+     ],
+     "s": [
+      [
+       324,
+       489
+      ]
+     ],
+     "D": [
+      [
+       683,
+       813
+      ]
+     ],
+     "A": [
+      [
+       896,
+       1067
+      ]
+     ],
+     "W": [
+      [
+       1093,
+       1167
+      ],
+      [
+       1211,
+       1287
+      ],
+      [
+       1357,
+       1443
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "stal",
+    "keep": true,
+    "f": "kit/q2/fq_stalin.png",
+    "bx": [
+     40,
+     147,
+     260,
+     373,
+     481,
+     589,
+     697,
+     805,
+     912,
+     1017,
+     1122,
+     1229,
+     1335
+    ],
+    "corn": [
+     60,
+     193
+    ],
+    "floor": [
+     387,
+     476
+    ],
+    "ground": [
+     660,
+     947
+    ],
+    "ppm": 27,
+    "gm": {
+     "S": [
+      [
+       64,
+       139
+      ],
+      [
+       168,
+       243
+      ],
+      [
+       397,
+       460
+      ],
+      [
+       504,
+       569
+      ],
+      [
+       611,
+       673
+      ],
+      [
+       827,
+       893
+      ],
+      [
+       933,
+       1000
+      ],
+      [
+       1040,
+       1103
+      ],
+      [
+       1144,
+       1209
+      ],
+      [
+       1253,
+       1320
+      ]
+     ],
+     "s": [
+      [
+       283,
+       353
+      ]
+     ],
+     "D": [
+      [
+       693,
+       813
+      ]
+     ]
+    }
+   },
+   {
+    "cat": "yard",
+    "f": "kit/q2/fq_yard.png",
+    "bx": [
+     67,
+     227,
+     384,
+     537,
+     687,
+     837,
+     989,
+     1144,
+     1304,
+     1464
+    ],
+    "corn": [
+     20,
+     107
+    ],
+    "floor": [
+     327,
+     547
+    ],
+    "ground": [
+     740,
+     993
+    ],
+    "ppm": 67,
+    "gm": {
+     "D": [
+      [
+       213,
+       387
+      ],
+      [
+       973,
+       1147
+      ]
+     ],
+     "W": [
+      [
+       107,
+       187
+      ],
+      [
+       424,
+       500
+      ],
+      [
+       573,
+       651
+      ],
+      [
+       724,
+       800
+      ]
+     ]
+    }
+   }
+  ]
+ },
+ "prop": {
+  "src": [
+   "cut/q_props",
+   "cut/q2_yarditems",
+   "cut/q3_garages2"
+  ],
+  "widths": [
+   4,
+   5,
+   6,
+   8,
+   10,
+   12,
+   15,
+   18,
+   22,
+   27,
+   33,
+   40,
+   48,
+   58
+  ],
+  "colors": 16,
+  "override": {
+   "cut/q_props/000.png": "lamp",
+   "cut/q_props/001.png": "cafe",
+   "cut/q_props/002.png": "bench",
+   "cut/q_props/003.png": "flower",
+   "cut/q_props/004.png": "busstop",
+   "cut/q_props/005.png": "kiosk",
+   "cut/q_props/006.png": "bin",
+   "cut/q_props/007.png": "bike",
+   "cut/q_props/008.png": "hedge",
+   "cut/q_props/009.png": "swing",
+   "cut/q_props/010.png": "fountain",
+   "cut/q_props/011.png": "sandbox",
+   "cut/q2_yarditems/005.png": "laundry",
+   "cut/q2_yarditems/007.png": "slide",
+   "cut/q2_yarditems/008.png": "picnic",
+   "cut/q2_yarditems/010.png": "bench",
+   "cut/q2_yarditems/011.png": "bins3",
+   "cut/q2_yarditems/012.png": "lilac",
+   "cut/q2_yarditems/013.png": "rack",
+   "cut/q2_yarditems/014.png": "flower",
+   "cut/q3_garages2/000.png": "garages",
+   "cut/q3_garages2/001.png": "garages",
+   "cut/q3_garages2/002.png": "garages",
+   "cut/q3_garages2/003.png": "container",
+   "cut/q3_garages2/004.png": "transformer",
+   "cut/q3_garages2/005.png": "shed"
+  }
+ },
+ "car": {
+  "src": [
+   "cut/q_cars"
+  ],
+  "widths": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   10,
+   12,
+   14,
+   17,
+   20,
+   24
+  ],
+  "colors": 14,
+  "cat": "a"
+ },
+ "roof": {
+  "src": [
+   "cut/q2_roofitems",
+   "cut/q3_flatitems"
+  ],
+  "widths": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   10,
+   12,
+   14,
+   17,
+   20
+  ],
+  "colors": 14,
+  "override": {
+   "cut/q2_roofitems/000.png": "chimney",
+   "cut/q2_roofitems/001.png": "chimney2",
+   "cut/q2_roofitems/002.png": "dormer",
+   "cut/q2_roofitems/003.png": "dormerR",
+   "cut/q2_roofitems/004.png": "ac",
+   "cut/q2_roofitems/005.png": "skylight",
+   "cut/q2_roofitems/006.png": "vent",
+   "cut/q2_roofitems/007.png": "dish",
+   "cut/q2_roofitems/008.png": "skyflat",
+   "cut/q3_flatitems/000.png": "machine",
+   "cut/q3_flatitems/001.png": "acrow",
+   "cut/q3_flatitems/002.png": "hatch",
+   "cut/q3_flatitems/003.png": "antenna",
+   "cut/q3_flatitems/004.png": "ventbox",
+   "cut/q3_flatitems/005.png": "tank",
+   "cut/q3_flatitems/006.png": "greenhouse",
+   "cut/q3_flatitems/007.png": "solar",
+   "cut/q3_flatitems/008.png": "pipes"
+  }
+ }
+}
