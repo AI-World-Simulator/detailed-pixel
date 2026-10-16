@@ -770,8 +770,8 @@ function drawBoat(sx, sy, ang, big, col, a, rmA) {
   }
   ctx.restore();
 }
-function drawCarRot(sx, sy, ang, c, a, rmA) {
-  const CL = KIT && KIT.g.car && (KIT.g.car.a || Object.values(KIT.g.car)[0]);
+function drawCarRot(sx, sy, ang, c, a, rmA, lm) {
+  const CL = KIT && KIT.g.car && ((lm === "nyc" && KIT.g.car.ny) || KIT.g.car.a || Object.values(KIT.g.car)[0]);
   if (CL) { // kit car sprite (seen from above, pointing up), rotated to the direction of travel
     const sp = CL[(Math.imul(c | 0, 0x9e3779b1) >>> 0) % CL.length], need = 4.5 / rmA * a;
     let m = sp[sp.length - 1]; for (const q of sp) if (q.h >= need * 0.95) { m = q; break; }
@@ -836,7 +836,7 @@ function drawCars(t) {
       const lx = xa + ux * s - uy * off, ly = ya + uy * s + ux * off;
       const [x, y] = localToScreen(g, lx, ly);
       if (x < -30 || y < -30 || x > W + 30 || y > H + 30 || occluded(x, y)) continue;
-      list.push([y, x, null, Math.atan2(uy * dir, ux * dir), CAR_COLS[(G.hh(e, q, 11) * CAR_COLS.length) | 0]]);
+      list.push([y, x, null, Math.atan2(uy * dir, ux * dir), CAR_COLS[(G.hh(e, q, 11) * CAR_COLS.length) | 0], g.lm]);
     }
   });
   list.sort((p, q) => p[0] - q[0]);
@@ -845,7 +845,7 @@ function drawCars(t) {
     const ang = c[3], sa = Math.abs(Math.sin(ang)), ca = Math.abs(Math.cos(ang));
     if (sa < 0.12) drawCar(c[1], c[0], true, Math.cos(ang) > 0 ? 1 : -1, c[4], a, rmA);
     else if (ca < 0.12) drawCar(c[1], c[0], false, Math.sin(ang) > 0 ? 1 : -1, c[4], a, rmA);
-    else drawCarRot(c[1], c[0], ang, c[4], a, rmA);
+    else drawCarRot(c[1], c[0], ang, c[4], a, rmA, c[5]);
   }
 }
 const PED_SHIRT = [0xd84a4a, 0x3b6fd1, 0x3fa36b, 0xe0a33a, 0x8e5bc8, 0x2f3b4c, 0xe6e6e6, 0xd96aa0, 0x29a3a8, 0x9a6a3a, 0xf2d24a, 0x5a7a3a];
@@ -1320,7 +1320,7 @@ async function loadKit() {
     if (!j || !j.png) return null;
     const bin = atob(j.png), u8 = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-    const im = await createImageBitmap(new Blob([u8], { type: "image/png" }));
+    const im = await createImageBitmap(new Blob([u8], { type: j.mime || "image/png" }));
     const c = document.createElement("canvas"); c.width = j.w; c.height = j.h;
     const g = c.getContext("2d"); g.drawImage(im, 0, 0);
     KIT = { w: j.w, h: j.h, g: j.g, img: c };

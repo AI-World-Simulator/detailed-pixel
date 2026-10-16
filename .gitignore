@@ -6,3 +6,4 @@ baked/
 !docs/*.png
 !data/*.png
 .DS_Store
+kitsrc/

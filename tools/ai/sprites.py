@@ -7,7 +7,7 @@
 """
 import sys, os, json
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 from scipy import ndimage as nd
 
 
@@ -59,8 +59,9 @@ def cut(sheet, outdir, minarea=900, tol=38.0, pad=2):
     print(f'{sheet}: bg={bg.round()} {k} sprites')
 
 
-def pixelize(src, width, colors=14, outline=False, height=None, athr=0.5):
-    """src: RGBA float array (0..255). Returns uint8 RGBA at target size."""
+def pixelize(src, width, colors=14, outline=False, height=None, athr=0.5, sharp=0.0):
+    """src: RGBA float array (0..255). Returns uint8 RGBA at target size.
+       sharp > 0: unsharp mask on the downscaled image before the palette (crisper windows and edges)."""
     H, W = src.shape[:2]
     if height is None:
         height = max(1, round(H * width / W))
@@ -75,6 +76,12 @@ def pixelize(src, width, colors=14, outline=False, height=None, athr=0.5):
     a2 = pm2[..., 3]
     rgb = np.where(a2[..., None] > 1e-4, pm2[..., :3] / np.maximum(a2[..., None], 1e-4), 0)
     mask = a2 > athr
+    if sharp > 0 and mask.any():
+        if not mask.all():  # spread opaque colours outwards so the transparent surround does not darken the edges
+            idx = nd.distance_transform_edt(~mask, return_distances=False, return_indices=True)
+            rgb = rgb[idx[0], idx[1]]
+        im = Image.fromarray(rgb.clip(0, 255).astype(np.uint8), 'RGB').filter(ImageFilter.UnsharpMask(radius=0.8, percent=int(sharp * 100), threshold=1))
+        rgb = np.asarray(im).astype(np.float32)
     out = np.zeros((height, width, 4), np.uint8)
     if mask.sum() == 0:
         return out

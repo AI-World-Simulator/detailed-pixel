@@ -281,9 +281,9 @@ function stRoofCol(e, lx, ly, sc) {
   }
   // flat: membrane / gravel with seams and stains, lighter parapet
   var dP = o.k === 3 ? stEdgeDist(o, lx, ly) : Math.min(lx - o.x0, o.x1 - lx, ly - o.y0, o.y1 - ly);
-  if (dP < 0.45) return sh(c, 1.16);
+  if (dP < 0.45) return o.kit && o.kit.ny && o.k === 3 ? sh(o.wc, dP < 0.15 ? 1.2 : 1.05) : sh(c, 1.16);   // New York: brick parapets with a stone coping
   if (SPR.ok && SPR.g.tex && SPR.g.tex.flat1) { // kit roofing (membrane, slabs, gravel, felt) aligned with the building
-    var Rf = o.rect, fu = Rf ? lx * Rf.ux + ly * Rf.uy : lx, fv = Rf ? -lx * Rf.uy + ly * Rf.ux : ly, fk = "flat" + (1 + ((o.id >>> 4) & 3));
+    var Rf = o.rect, fu = Rf ? lx * Rf.ux + ly * Rf.uy : lx, fv = Rf ? -lx * Rf.uy + ly * Rf.ux : ly, fk = (o.kit && o.kit.ny && SPR.g.tex.nyr1 ? "nyr" : "flat") + (1 + ((o.id >>> 4) & 3));
     if (!SPR.g.tex[fk]) fk = "flat1";
     var fc = sprTexCol(fk, fu, fv, sc, c);
     if (fc >= 0) return dP < 0.75 ? sh(fc, 0.84) : fc;
@@ -300,7 +300,7 @@ function stWallCol(e, lx, ly, z, sc) {
   if (zr < 0) zr = 0;
   var u = lx;
   if (o.k === 3) u = stEdgeInfo(o, lx, ly).u;
-  if (SPR.ok && o.win !== 3 && o.win !== 0 && z <= h && z >= o.z0) {
+  if (SPR.ok && (o.win !== 3 || (o.kit && o.kit.fkg)) && o.win !== 0 && z <= h && z >= o.z0) {
     if (o.k === 3 && SPR.g.fk) { var kcol = sprFkCol(o, stEdgeInfo(o, lx, ly), zr, sc); if (kcol >= 0) return kcol; }
     var fcol = sprFacCol(o, u, zr, sc); if (fcol >= 0) return fcol;
   }
@@ -342,12 +342,28 @@ function stTreePal(o) {
   return TREE_ST[o._sp];
 }
 
+/* tallest thing that can reach into this tile: towers up to ~90 m south rise into it, their shadows fall across it.
+   Schema cities look at the buildings around the tile (per-bucket maxima, cached), so a low district beside Midtown stays cheap. */
+function stLocalMaxH(c, mpp, ox, oy) {
+  if (!c.schema) return Math.min(c.maxH || 40, 90);
+  var sb = sgBuild(c), sc = 1 / (c.k * mpp), ax = (c.mx - ox) / mpp, ay = (c.my - oy) / mpp;
+  var lx0 = -ax / sc - 90, lx1 = (TS - ax) / sc + 90, ly0 = -ay / sc - 90, ly1 = (TS - ay) / sc + 90, m = 20, i, j, q;
+  for (q = 0; q < c.lms.length; q++) { var A = c.lms[q].A; if (!(A.X1 < lx0 || A.X0 > lx1 || A.Y1 < ly0 || A.Y0 > ly1)) return Math.min(c.maxH || 40, 200); }
+  if (!sb.MH) sb.MH = new Map();
+  for (j = Math.floor(ly0 / 128); j <= Math.floor(ly1 / 128); j++) for (i = Math.floor(lx0 / 128); i <= Math.floor(lx1 / 128); i++) {
+    var k = i * 65536 + j, v = sb.MH.get(k);
+    if (v === undefined) { v = 0; var L = sb.B.get(k); if (L) for (q = 0; q < L.length; q++) { var o = sb.list[L[q]]; if (o.h !== undefined && (o.z0 || 0) + o.h > v) v = (o.z0 || 0) + o.h; } sb.MH.set(k, v); }
+    if (v > m) m = v;
+  }
+  return Math.min(m + 6, 200);   // + rooftop water towers and bulkheads
+}
+
 /* --- the ray caster --- */
 function streetPass(out, msk, z, tx, ty, mpp) {
   var n = Math.pow(2, z), ox = tx / n * C, oy = ty / n * C, i, j, e;
   // margins from the tallest object nearby (capped)
   var maxM = 0;
-  for (i = 0; i < TC.length; i++) maxM = Math.max(maxM, Math.min(TC[i].maxH || 40, 90));
+  for (i = 0; i < TC.length; i++) maxM = Math.max(maxM, stLocalMaxH(TC[i], mpp, ox, oy));
   var kc = kAt(oy + TS * mpp / 2), mT = maxM / (kc * mpp);
   var mxL = Math.ceil(mT * SUNA) + 4, myT = Math.ceil(mT * SUNB) + 4, myB = Math.ceil(mT * STF) + 4, mxR = SPR.ri ? 14 : 4;
   var W = TS + mxL + mxR, H = TS + myT + myB;
@@ -542,7 +558,7 @@ function sprTreeOf(o) {
   return L[((o.id >>> 3) & 0xffff) % L.length];
 }
 // roof / wall textures: metres per repeat; the texture modulates the building's own colour
-var SPR_TS = { terra: 3.0, metal: 4.8, slate: 3.0, flat1: 6, flat2: 6, flat3: 5, flat4: 6 };
+var SPR_TS = { terra: 3.0, metal: 4.8, slate: 3.0, flat1: 6, flat2: 6, flat3: 5, flat4: 6, nyr1: 6, nyr2: 6, nyr3: 5, nyr4: 6 };
 function sprTexCol(cat, u, v, sc, base) {
   var T = SPR.g.tex && SPR.g.tex[cat];
   if (!T) return -1;
@@ -555,7 +571,7 @@ function sprTexCol(cat, u, v, sc, base) {
   var k = m.w / S, x = Math.floor(u * k) % m.w, y = Math.floor(v * k) % m.h;
   if (x < 0) x += m.w; if (y < 0) y += m.h;
   var a = ((m.y + y) * AW + m.x + x) * 4;
-  var kf = cat.charCodeAt(0) === 102 ? 1.6 : 0.5; // flat roofing: full-strength texture (seams, patches, gravel)
+  var c0 = cat.charCodeAt(0), kf = c0 === 102 ? 1.6 : c0 === 110 ? 1.3 : 0.5; // flat roofing: full-strength texture (seams, patches, gravel)
   var r = ((base >> 16) & 255) * (1 - kf + kf * P[a] / m.mr), g = ((base >> 8) & 255) * (1 - kf + kf * P[a + 1] / m.mg), b = (base & 255) * (1 - kf + kf * P[a + 2] / m.mb);
   if (r < 0) r = 0; if (g < 0) g = 0; if (b < 0) b = 0;
   return ((r > 255 ? 255 : r) << 16) | ((g > 255 ? 255 : g) << 8) | (b > 255 ? 255 : b);
@@ -594,7 +610,7 @@ function sprFacCol(o, u, zr, sc) {
 function sprFkOf(o) {
   if (o._fk !== undefined) return o._fk;
   var G = SPR.g.fk, k = o.kit, L = null;
-  if (G && k) L = (k === KITS.stalin && G.stal) ? G.stal : (k === KITS.msk || k === KITS.stalin || k === KITS.haus || k === KITS.subfr) ? (G.msk || null) : null;
+  if (G && k && k.fk) { L = G[o.win === 3 && k.fkg ? k.fkg : k.fkt && o.z0 + o.h > 70 ? k.fkt : k.fk] || G[k.fk] || (k.fk === "stal" ? G.msk : null) || null; if (L && !L.length) L = null; }
   o._fk = L ? L[((o.id >>> 7) & 0xffff) % L.length] : null;
   return o._fk;
 }
@@ -614,7 +630,7 @@ function sprFkSrc(m, t, salt) {
 function sprFkCol(o, ei, zr, sc) {
   var F = sprFkOf(o);
   if (!F) return -1;
-  var B = o.bays && o.bays[ei.i], YL = SPR.g.fk.yard;
+  var B = o.bays && o.bays[ei.i], YL = SPR.g.fk[(o.kit && o.kit.fky) || "yard"];
   if (!B && YL && o.bays) F = YL[((o.id >>> 11) & 0xffff) % YL.length];   // a wall away from the street: plain courtyard side
   var m = F[F.length - 1], i;
   for (i = 0; i < F.length; i++) if (F[i].s >= sc * 0.92) { m = F[i]; break; }
@@ -652,7 +668,7 @@ function sprFkRecolor(o, m, r, g, b) { // the texture's plaster takes this build
 // street furniture: upright sprites standing on their base point; width in metres per type
 /* rooftop details of one building (k = 6, z = roof height there): chimneys by the ridge, dormers on the street slope
    every other bay, skylights now and then; air conditioners, vents and dishes on flat roofs */
-var ROOF_W = { greenhouse: 3.0, pipes: 2.6, machine: 3.4, acrow: 3.0, ventbox: 2.2, antenna: 1.8, hatch: 1.4, solar: 2.6, tank: 2.4, chimney: 1.6, chimney2: 1.9, dormer: 2.8, dormerR: 2.8, ac: 1.9, skylight: 2.2, vent: 0.9, dish: 1.9, skyflat: 2.4 }; // exaggerated like the reference
+var ROOF_W = { wtower: 4.4, wtower2: 4.8, bulk: 3.8, elev: 4.6, hvac: 3.6, acrow2: 3.4, flues: 1.8, sky2: 2.8, deck: 5.6, greenhouse: 3.0, pipes: 2.6, machine: 3.4, acrow: 3.0, ventbox: 2.2, antenna: 1.8, hatch: 1.4, solar: 2.6, tank: 2.4, chimney: 1.6, chimney2: 1.9, dormer: 2.8, dormerR: 2.8, ac: 1.9, skylight: 2.2, vent: 0.9, dish: 1.9, skyflat: 2.4 }; // exaggerated like the reference
 function stRoofItems(o) {
   if (o._ri) return o._ri;
   var R = [], s = o.id, p = o.p, n = o.n, i, q, terra = ((o.rc >> 16) & 255) > ((o.rc & 255) + 40);
@@ -679,6 +695,20 @@ function stRoofItems(o) {
         put(kind, p[2 * ei] + tx * t + nx * inset, p[2 * ei + 1] + ty * t + ny * inset, 10 + ei * 32 + q);
       }
     }
+  } else if (o.kit && o.kit.ny && SPR.g.roof.wtower) { // New York: a stair bulkhead, the wooden water tower, HVAC, flues, skylights, the odd roof deck
+    var area = polyArea(p), RG = SPR.g.roof, Rr = o.rect, hb = o.z0 + o.h, ux = Rr ? Rr.ux : 1, uy = Rr ? Rr.uy : 0, hl = Rr ? Rr.hl : (o.bb[2] - o.bb[0]) / 2, hd = Rr ? Rr.hd : (o.bb[3] - o.bb[1]) / 2;
+    var at = function (a, b) { return [cx + ux * a * hl - uy * b * hd, cy + uy * a * hl + ux * b * hd]; }, q2;
+    var small = area < 130 || hb < 14;   // a townhouse: a hatch, a skylight and a flue, no bulkhead or tank
+    q2 = at((hh(s, 1, 120) - 0.5) * 0.8, 0.35); put(small ? (hh(s, 6, 120) < 0.5 ? "hatch" : "sky2") : hb > 40 && RG.elev ? "elev" : "bulk", q2[0], q2[1], 120);
+    if (!small && hb > 14 && hb < 90 && area > 150 && hh(s, 2, 120) < (hb > 30 ? 0.6 : 0.45)) { q2 = at((hh(s, 3, 120) - 0.5) * 0.9, -0.15 + hh(s, 4, 120) * 0.3); put(hh(s, 5, 120) < 0.5 || !RG.wtower2 ? "wtower" : "wtower2", q2[0], q2[1], 121); }
+    var cnt2 = small ? (hh(s, 7, 120) < 0.6 ? 1 : 0) : Math.min(12, 1 + Math.floor(area / 110));
+    for (i = 0; i < cnt2 * 5 && R.length < cnt2 + 2; i++) {
+      var x2 = o.bb[0] + 2 + hh(s, i, 96) * (o.bb[2] - o.bb[0] - 4), y2 = o.bb[1] + 2 + hh(s, i, 97) * (o.bb[3] - o.bb[1] - 4), r2 = hh(s, i, 98);
+      if (stEdgeDist(o, x2, y2) < 1.4) continue;
+      var t4 = small ? (r2 < 0.6 ? "flues" : "vent") : r2 < 0.25 ? "hvac" : r2 < 0.42 ? "acrow2" : r2 < 0.6 ? "flues" : r2 < 0.74 ? "sky2" : r2 < 0.88 ? "ac" : "vent";
+      if (!RG[t4]) t4 = "vent";
+      put(t4, x2, y2, 100 + i);
+    }
   } else {
     var area = polyArea(p), cnt = Math.min(16, 3 + Math.floor(area / 60));
     if (SPR.g.roof.machine && area > 220) put("machine", cx + (hh(s, 3, 99) - 0.5) * 3, cy + (hh(s, 4, 99) - 0.5) * 3, 99);
@@ -693,9 +723,11 @@ function stRoofItems(o) {
   o._ri = R;
   return R;
 }
-var PROP_W = { pcar: 2.0, lamp: 1.2, bin: 1.7, cafe: 3.2, kiosk: 3.9, bench: 2.4, sandbox: 3.8, swing: 3.8, flower: 3.0, bike: 2.1, busstop: 3.9, hedge: 3.0, fountain: 3.8, shed: 3.6, garages: 6.2, container: 4.4, transformer: 2.2, slide: 3.2, picnic: 3.0, rack: 2.6, laundry: 4.0, bins3: 3.6, birch: 3.4, lilac: 3.2, tyres: 2.8 };
+function sprCars() { var C = SPR.g.car; return C ? (CUR_LM === "nyc" && C.ny) || C.a || C[Object.keys(C)[0]] : null; } // the city's own traffic
+var PROP_W = { hydrant: 0.9, subway: 4.2, hotdog: 2.6, newsbox: 2.2, mailbox: 1.0, bags: 2.0, wirecan: 1.0, citibike: 6.0, nytree: 3.2, barrier: 2.6, barrel: 1.0, newsstand: 4.0, nybus: 4.2, fruit: 3.2, planter: 2.6,
+  ydeck: 4.4, grill: 1.4, gshed: 3.0, pots: 2.6, vbed: 3.0, ytable: 2.6, yfence: 3.0, lounge: 2.4, ybike: 1.9, playhouse: 2.4, yline: 3.6, tcans: 2.4, pcar: 2.0, lamp: 1.2, bin: 1.7, cafe: 3.2, kiosk: 3.9, bench: 2.4, sandbox: 3.8, swing: 3.8, flower: 3.0, bike: 2.1, busstop: 3.9, hedge: 3.0, fountain: 3.8, shed: 3.6, garages: 6.2, container: 4.4, transformer: 2.2, slide: 3.2, picnic: 3.0, rack: 2.6, laundry: 4.0, bins3: 3.6, birch: 3.4, lilac: 3.2, tyres: 2.8 };
 function sprProp(out, msk, e, maxHT) {
-  var o = e.o, G = o.k === 6 ? SPR.g.roof : SPR.g.prop, Lp = o.t === "pcar" ? (SPR.g.car && SPR.g.car.a) : G && (G[o.t] || null);
+  var o = e.o, G = o.k === 6 ? SPR.g.roof : SPR.g.prop, Lp = o.t === "pcar" ? sprCars() : G && (G[o.t] || null);
   if (!Lp || !Lp.length) return;
   var sp = Lp[((o.id >>> 3) & 0xffff) % Lp.length], sc = e.sc, D = (PROP_W[o.t] || 1.5) * sc;
   if (D < 2) return;
@@ -732,7 +764,7 @@ function sprTrees(out, msk, maxHT) {
     if (x1 <= 0 || y1 <= 0 || x0 >= TS || y0 >= TS) continue;
     var flip = (o.id >>> 20) & 1;
     for (var py = Math.max(0, y0); py < Math.min(TS, y1); py++) {
-      var v = Math.min(m.h - 1, ((py - y0 + 0.5) / s) | 0), drow = yb + (py + 0.5 - cy);
+      var v = Math.min(m.h - 1, ((py - y0 + 0.5) / s) | 0), drow = yb + Math.max(py + 0.5 - cy, -o.r * sc * 0.3); // the crown leans over a nearby wall instead of being cut by it
       for (var px = Math.max(0, x0); px < Math.min(TS, x1); px++) {
         var u = Math.min(m.w - 1, ((px - x0 + 0.5) / s) | 0); if (flip) u = m.w - 1 - u;
         var a = ((m.y + v) * AW + m.x + u) * 4;

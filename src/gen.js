@@ -341,7 +341,7 @@ var CO_LAWN = 0x5f9c41, CO_LAWN2 = 0x568f3b, CO_HEDGE = 0x3c7433, CO_PATH = 0xd2
 function carTop(ax, al, len, wd, col, rm, hsel) { // ax across (-wd/2..wd/2), al along (0..len)
   var hw = wd / 2;
   if (hsel !== undefined && SPR.ok && SPR.g.car) { // kit car seen from above, pointing along the street
-    var CL = SPR.g.car.a || SPR.g.car[Object.keys(SPR.g.car)[0]], sp = CL[((hsel * 4294967296) >>> 0) % CL.length];
+    var CL = sprCars(), sp = CL[((hsel * 4294967296) >>> 0) % CL.length];
     var m = sp[sp.length - 1], need = len / Math.max(0.02, rm || 0.1);
     for (var mi = 0; mi < sp.length; mi++) if (sp[mi].h >= need * 0.95) { m = sp[mi]; break; }
     var sw2 = len * m.w / m.h, u = (ax / sw2 + 0.5) * m.w, v = (1 - al / len) * m.h;
@@ -357,7 +357,7 @@ function carTop(ax, al, len, wd, col, rm, hsel) { // ax across (-wd/2..wd/2), al
   if (al >= len * 0.4 && al <= len * 0.74) return Math.abs(ax) < hw - 0.3 ? sh(col, 1.18) : sh(col, 0.8);
   return Math.abs(ax) > hw - 0.35 ? sh(col, 0.82) : col;
 }
-var CUR_STY = 0;
+var CUR_STY = 0, CUR_LM = "";
 function lawn(x, y, rm, s) {
   if (CUR_STY === S_ME) { if (rm < 1.2) { var nq = noise(x / 4 + s % 31, y / 4); return nq > 0.25 ? 0xe2d3ae : nq < -0.3 ? 0xcfbd94 : 0xd9c9a3; } return 0xd9c9a3; }
   if (rm < 1.2) { var n = noise(x / 3.1 + s % 53, y / 3.1); if (n > 0.28) return 0x6aa84a; if (n < -0.3) return CO_LAWN2; if (hh(Math.floor(x / 0.7), Math.floor(y / 0.7), s) < 0.03) return 0x78b554; }
@@ -618,7 +618,7 @@ var LMC = { park: 0x5f9e45, bigpark: 0x5f9e45, mall: 0x6aa64a, lawn: 0x6aa64a, c
 /* city pixel in local metres; -1 = not part of this city */
 function cityFine(c, lx, ly, rm, gx, gy) {
   var rd = c.rv ? riverD(c, lx, ly) : 99, wet = rd < 0;
-  CUR_STY = c.sty;
+  CUR_STY = c.sty; CUR_LM = c.lm || "";
   var bi = blockIx(c, lx), bj = blockJy(c, ly), xa = lineX(c, bi), ya = lineY(c, bj);
   var PX = lineX(c, bi + 1) - xa, PY = lineY(c, bj + 1) - ya;
   var fu = lx - xa, fv = ly - ya;
@@ -2077,7 +2077,7 @@ function sgRoads(c, g) {
 /* ---------- block subdivision ----------
    Faces of the street graph that are bigger than their district's target block size are cut by straight lanes,
    recursively, across their longer extent (with a little jitter), so every block is clean and has no dead ends. */
-var TGT = { historic: 9500, stalin: 15000, haussmann: 9000, banlieue: 14000, ottoman: 2400, modern: 10000, nybrick: 9000, midtown: 9000, downtown: 6000, imperial: 11000 };
+var TGT = { historic: 9500, stalin: 15000, haussmann: 9000, banlieue: 14000, ottoman: 2400, modern: 10000, nybrick: 9000, nyrow: 8000, nyloft: 8000, midtown: 9000, downtown: 6000, imperial: 11000 };
 function sgSubdivide(c, g, segs) {
   var S = c.schema, tg = { lmk: g.lmk, N: g.N, half: g.half, cell: g.cell, wat: g.wat, dist: g.dist, dt: g.dt };
   sgBuildGraph(c, tg, segs.slice());
@@ -2249,7 +2249,7 @@ function schemaPix(c, lx, ly, rm, gx, gy) {
   sgRoadQ(g, lx, ly);
   var onRoad = RQ.a < band, onWalk = !onRoad && RQ.b < band;
   if (rm > 3.2) { onRoad = RQ.a < Math.max(0, 0.5 * rm - 4); onWalk = false; }
-  CUR_STY = c.sty;
+  CUR_STY = c.sty; CUR_LM = c.lm || "";
   if (rd < 0) {
     var cls = RQ.e >= 0 ? g.E.cls[RQ.e] : 2;
     if ((onRoad || onWalk) && cls < 2) { OUTC = 1; OUTB = 1; var bc = sgStreet(g, lx, ly, rm, gx, gy, onRoad); return RQ.b > -0.9 && RQ.b < band + Math.max(0.6, rm * 0.6) - 0 && !onRoad ? 0x6d655c : sh(bc, 1.05); }
@@ -2274,6 +2274,13 @@ function sgStreet(g, x, y, rm, gx, gy, onRoad) {
   var ra = g.nr[na] + EC[cls][1], rb = g.nr[nb] + EC[cls][1], dega = g.adj[na].length, degb = g.adj[nb].length;
   if (!onRoad) { // sidewalk
     if (RQ.b > -Math.max(0.28, rm * 0.5) && RQ.b < 0 || RQ.a < Math.max(0.28, rm * 0.5)) return CO_CURB;
+    if (CUR_LM === "nyc") { // New York: big grey concrete flags, darker gum-spotted near the curb
+      if (rm >= 1.1) return 0xc3c0b9;
+      var qa = s / 1.5, qb = (d - cw) / 1.5, ja = Math.floor(qa), jb = Math.floor(qb), gq = Math.max(0.07, rm * 0.4) / 1.5;
+      if (qa - ja < gq || qb - jb < gq) return 0xa29f98;
+      var tq = hh(ja, jb, e + 5), sp = hh(Math.floor(s * 3), Math.floor(d * 3), e + 6);
+      return sp < 0.025 ? 0x9b988f : tq < 0.15 ? 0xbab7b0 : tq > 0.88 ? 0xd2cfc8 : 0xc6c3bc;
+    }
     if (rm < 1.1) {
       var pa = s / 0.8, pb = (d - cw) / 0.8, ia = Math.floor(pa + (Math.floor(pb) & 1) * 0.5), ib = Math.floor(pb), gr = Math.max(0.1, rm * 0.45) / 0.8;
       if (pa + (ib & 1) * 0.5 - ia < gr || pb - ib < gr) return CO_WALK2;
@@ -2350,6 +2357,49 @@ function sgCourt(F, x, y, rm, gx, gy) {
   if (k === 5) { var fl = flowers(x, y, 33); return fl >= 0 ? fl : 0x5a3f2a; }
   return grass(x, y, rm, 17);
 }
+/* New York rear gardens: the court is cut into one strip per lot by wooden fences from the back walls to the middle line;
+   each strip gets its own ground (lawn, brick patio, bluestone, gravel, a timber deck) with a paved terrace by the house and planted borders */
+function nyYardPrep(F) {
+  if (F._ny) return F._ny;
+  var bx = F.court[0], by = F.court[1], m = bx.length, E = [], k, f = F.fen || [];
+  for (k = 0; k < m; k++) { var k2 = (k + 1) % m, ex = bx[k2] - bx[k], ey = by[k2] - by[k], L = Math.hypot(ex, ey) || 1; E.push({ x: bx[k], y: by[k], ux: ex / L, uy: ey / L, L: L, t: [] }); }
+  for (var i = 0; i < f.length; i += 5) {
+    var e = E[f[i]]; if (!e) continue;
+    for (var q = 1; q <= 3; q += 2) e.t.push((f[i + q] - e.x) * e.ux + (f[i + q + 1] - e.y) * e.uy);
+  }
+  for (k = 0; k < m; k++) { E[k].t.sort(function (a, b) { return a - b; }); var u = []; for (q = 0; q < E[k].t.length; q++) if (!u.length || E[k].t[q] - u[u.length - 1] > 0.8) u.push(E[k].t[q]); E[k].t = u; }
+  F._ny = E;
+  return E;
+}
+var NYG = { k: 0, t: 0, d: 0, j: 0, fd: 0, d2: 0 };   // last nyYardAt: nearest court edge, position along it, depth, lot strip, distance to its fence, gap to the middle line
+function nyYardAt(F, x, y) {
+  var E = nyYardPrep(F), d1 = 1e9, d2 = 1e9, k1 = 0, t1 = 0;
+  for (var k = 0; k < E.length; k++) {
+    var e = E[k], t = (x - e.x) * e.ux + (y - e.y) * e.uy, tc = t < 0 ? 0 : t > e.L ? e.L : t, dx = e.x + e.ux * tc - x, dy = e.y + e.uy * tc - y, d = Math.sqrt(dx * dx + dy * dy);
+    if (d < d1) { d2 = d1; d1 = d; k1 = k; t1 = t; } else if (d < d2) d2 = d;
+  }
+  var T = E[k1].t, j = 0, fd = 1e9;
+  for (var q = 0; q < T.length; q++) { if (T[q] < t1) j = q + 1; var a = Math.abs(t1 - T[q]); if (a < fd) fd = a; }
+  NYG.k = k1; NYG.t = t1; NYG.d = d1; NYG.j = j; NYG.fd = fd; NYG.d2 = d2 - d1;
+  return NYG;
+}
+function sgNyYard(F, x, y, rm, s) {
+  if (!inPolyAny(F.cf, x, y)) return paving(x, y, rm, 0xb9b2a6, 0xa39c90, 0.6, 43);         // behind a shallower house: its terrace
+  var Y = nyYardAt(F, x, y), fw = Math.max(0.11, rm * 0.55);
+  if (Y.fd < fw || (Y.d2 < fw * 2 && Y.d > 2)) { var post = (Y.fd < fw ? Y.d : Y.t) % 1.8; return post < 0.22 ? 0x4e3826 : 0x8a6440; } // wooden fences
+  var e = F._ny[Y.k], mat = hh(F.id, Y.k * 97 + Y.j, 401), u = Y.t, v = Y.d;
+  if (v < 2.4) { // terrace by the back wall: bluestone, brick or a deck
+    if (mat < 0.35) return paving(u, v, rm, 0x9aa1a4, 0x7d8387, 0.75, 44);
+    if (mat < 0.7) return tiles(u * 2, v, rm, 0xa45f45, 0x7f4535, 0.42);
+    var bd = (v * 5.5) % 1; return rm < 0.6 && bd < 0.14 ? 0x7a5634 : 0xa77a4c;
+  }
+  if (Y.fd < 0.95 || Y.d2 < 1.6) { var fl = rm < 0.9 ? flowers(x, y, 57) : -1; if (fl >= 0) return fl; return hh(Math.floor(x * 1.6), Math.floor(y * 1.6), 58) < 0.45 ? 0x3f6e2f : 0x5a4030; } // planted borders
+  if (mat < 0.42) return grass(x, y, rm, s);
+  if (mat < 0.6) return paving(u * 0.9, v, rm, 0xa86a4e, 0x8a5240, 0.5, 45);
+  if (mat < 0.75) { var g2 = hh(Math.floor(x * 4), Math.floor(y * 4), 59); return g2 < 0.3 ? 0xc9bea6 : g2 < 0.6 ? 0xb8ad96 : 0xd6ccb6; }
+  if (mat < 0.88) { var bd2 = (v * 5.5) % 1; return rm < 0.6 && bd2 < 0.14 ? 0x6e4e30 : 0x9c7148; }
+  return lawn(x, y, rm, s);
+}
 /* courtyards: paving with organic grass beds edged by low hedges, flower beds and a sandpit now and then */
 function sgYard(x, y, rm, gx, gy, s, t) { // leftover ground: pocket park in big faces, paving with planters in small ones
   if (FACE && FACE.area > 2500) return parkGround0(x - FACE.cx + 60, y - FACE.cy + 60, 120, 120, rm, s, gx, gy);
@@ -2390,6 +2440,7 @@ function sgGround(t, x, y, rm, gx, gy, dd) {
   }
   if (t === "glass") return tiles(x, y, rm, 0xd0cbc2, 0xbfb9ae, 3);
   if (FACEK === 1) return sgSquare(x, y, rm, gx, gy);
+  if (FACE && FACE.cf && FACE.ny && rm <= 3) return sgNyYard(FACE, x, y, rm, s);
   if (FACE && FACE.cf && rm <= 3) return sgCourt(FACE, x, y, rm, gx, gy);
   if (FACE && FACE.gd && rm <= 3) return sgGarden(FACE, x, y, rm, s);
   if (rm <= 3) return sgYard(x, y, rm, gx, gy, s, t);
@@ -2413,12 +2464,21 @@ KITS.ny = { walls: [0xa8583c, 0xb06a4e, 0x9a4e36, 0xb87a5a, 0x8e5a44, 0xc9a07a, 
 KITS.nyt = { walls: [0xc7c3b6, 0xb9b5a8, 0x8a9fb5, 0x6f97b3, 0xd9cfb4, 0x56788f, 0xa9aca4], roofs: [0x8f979e, 0x7d858c], pitched: 0, trim: 0, aw: 0.15, glassP: 0.45 };
 KITS.ist = { walls: [0xe8b04a, 0xd98f6a, 0xf1e3b2, 0x9fcf8a, 0xe07a5f, 0xd9c4a0, 0xf2f0e6, 0xb9cfe2, 0xe6a0a0], roofs: [0xb9472f, 0xc4573a, 0xa8402c, 0xcf6a45, 0xb35238], pitched: 0.88, trim: 0xf6f0e4, aw: 0.3 };
 KITS.istm = { walls: [0xf1ebdc, 0xe2cfa6, 0xd8d4ca, 0xe8e0d0, 0xeadcc0], roofs: [0xb9472f, 0xc4573a, 0x9a9ea3], pitched: 0.45, trim: 0, aw: 0.2 };
+/* kit facade groups (atlas fk.<name>): fk = street side, fky = courtyard / rear side, fkt = towers over 70 m; ny = New York roofs, props, rear gardens */
+KITS.msk.fk = "msk"; KITS.stalin.fk = "stal"; KITS.haus.fk = "msk"; KITS.subfr.fk = "msk";
+var NY_ROOF = [0xb4b8bb, 0x9a9ea2, 0x6a6d70, 0x55585b, 0xa49a8c, 0x8a857c, 0xc0c3c4];   // silver-painted tar, grey membrane, the odd black tar roof
+KITS.ny.fk = "nyten"; KITS.ny.fky = "nyyard"; KITS.ny.ny = 1;
+KITS.nyrow = { walls: [0x94603f, 0x9c6a4a, 0x8a5a40, 0xa8785a, 0xb0654a, 0xc2b092, 0xa06a50, 0x9b8f86], roofs: [0x55585c, 0x606366], pitched: 0, trim: 0xe8dcc6, aw: 0, fk: "nyrow", fky: "nyyard", ny: 1 };
+KITS.nyloft = { walls: [0xe6dccb, 0xd9cdb8, 0xc9b9a0, 0xb8a58c, 0xe2d6c2], roofs: [0x55585c, 0x606366], pitched: 0, trim: 0, aw: 0.1, fk: "nyloft", fky: "nyyard", ny: 1 };
+KITS.nyt.fk = "nymid"; KITS.nyt.fkt = "nytall"; KITS.nyt.fkg = "nyglass"; KITS.nyt.fky = "nymid"; KITS.nyt.ny = 1;
 var DRULE = {
   ottoman: { lot: [10, 20], D: [11, 15], fl: [3, 5], sb: 0, gap: 0.03, kit: "ist", treeP: 0.3, stP: 0.45 },
   modern: { lot: [20, 40], D: [13, 17], fl: [5, 9], sb: 2, gap: 0.08, kit: "istm", treeP: 0.3, stP: 0.6 },
-  nybrick: { lot: [12, 26], D: [16, 22], fl: [4, 7], sb: 0, gap: 0.02, kit: "ny", treeP: 0.22, stP: 0.7 },
-  midtown: { lot: [24, 46], D: [24, 36], fl: [16, 55], sb: 0, gap: 0.04, kit: "nyt", treeP: 0.03, stP: 0.45 },
-  downtown: { lot: [22, 40], D: [22, 32], fl: [18, 62], sb: 0, gap: 0.04, kit: "nyt", treeP: 0.03, stP: 0.4 },
+  nybrick: { lot: [8, 16], D: [15, 19], fl: [4, 6], sb: 0, gap: 0, kit: "ny", treeP: 0.3, stP: 0.75, arch: 0, shop: 0.75, yard: "ny" },
+  nyrow: { lot: [5.5, 8], D: [12, 15], fl: [3, 4], sb: 0, gap: 0, kit: "nyrow", treeP: 0.55, stP: 0.85, arch: 0, shop: 0.06, yard: "ny", bw: 2.1, stoop: 1 },
+  nyloft: { lot: [10, 20], D: [20, 26], fl: [5, 7], sb: 0, gap: 0, kit: "nyloft", treeP: 0.12, stP: 0.6, arch: 0, shop: 1, yard: "ny", bw: 2.6 },
+  midtown: { lot: [18, 40], D: [22, 32], fl: [12, 50], sb: 0, gap: 0, kit: "nyt", treeP: 0.06, stP: 0.45, arch: 0, shop: 0.8 },
+  downtown: { lot: [18, 36], D: [20, 30], fl: [14, 58], sb: 0, gap: 0, kit: "nyt", treeP: 0.05, stP: 0.4, arch: 0, shop: 0.7 },
   haussmann: { lot: [14, 28], D: [15, 20], fl: [6, 7], sb: 0, gap: 0.01, kit: "haus", treeP: 0.22, stP: 0.85 },
   banlieue: { lot: [16, 34], D: [9, 13], fl: [2, 4], sb: 4, gap: 0.3, kit: "subfr", treeP: 0.4, stP: 0.6 },
   historic: { lot: [12, 24], D: [11, 15], fl: [3, 6], sb: 0, gap: 0, kit: "msk", treeP: 0.4, stP: 0.8, arch: 0.12, shop: 0.55 },
@@ -2728,6 +2788,9 @@ function sgBlocks(c, g, place) {
           if (rule.arch === undefined) break;
         }
         if (sbd) sgFront(sbd, [0], [od[k]], rule, rule.arch && L1 > 13 && hh(q, sd, 14) < rule.arch ? 1 : 0);
+        if (sbd && rule.yard === "ny") { // New York rear gardens: a fence from the back wall at every lot line
+          face.ny = 1; (face.fen || (face.fen = [])).push(k, x0 + nxs * Dq, y0 + nys * Dq, x0 + u0[0] * L1 + nxs * Dq, y0 + u0[1] * L1 + nys * Dq);
+        }
         t += Lt; q++;
       }
     }
@@ -2748,7 +2811,7 @@ function sgProps(c, i, j) {
     if (sgInBuilding(sb, x, y)) return;
     T.push({ k: 5, t: t, x: x, y: y, id: id | 0 });
   };
-  var L = g.EB.get(key);
+  var L = g.EB.get(key), NY = c.lm === "nyc";
   if (L) for (q = 0; q < L.length; q++) {
     var e = L[q], cls = E.cls[e], cw = EC[cls][0], sw = EC[cls][1], ux = E.ux[e], uy = E.uy[e], len = E.len[e];
     var da = g.adj[E.a[e]].length > 2, db = g.adj[E.b[e]].length > 2, xa = g.nx[E.a[e]], ya = g.ny[E.a[e]];
@@ -2756,8 +2819,20 @@ function sgProps(c, i, j) {
     for (var side = -1; side <= 1; side += 2) {
       for (var s = Math.ceil((s0 + E.sA[e] - 5.25) / 21) * 21 - E.sA[e] + 5.25; s < s1; s += 21) // lamps between the trees
         add("lamp", xa + ux * s - uy * side * (cw + 0.7), ya + uy * s + ux * side * (cw + 0.7), Math.imul(e + 3, 0x9e3779b1) ^ Math.floor(s));
-      if (len > 40 && hh(e, side, 71) < 0.18) { var sk = len * (0.3 + 0.4 * hh(e, side, 72)); add("kiosk", xa + ux * sk - uy * side * (cw + 1.8), ya + uy * sk + ux * side * (cw + 1.8), e * 31 + side); }
-      else if (cls < 2 && len > 70 && hh(e, side, 78) < 0.5) { var sb2 = len * (0.35 + 0.3 * hh(e, side, 79)); add("busstop", xa + ux * sb2 - uy * side * (cw + 1.9), ya + uy * sb2 + ux * side * (cw + 1.9), e * 37 + side); }
+      if (NY) { // New York sidewalks: hydrants, wire cans and newspaper boxes by the corners, subway stairs on the avenues, carts, bike docks
+        var cs = side * 7 + e * 13, wo = cw + 0.8, wm = cw + sw * 0.5;
+        if (da) { if (hh(e, cs, 201) < 0.7) add("hydrant", xa + ux * (s0 - 2) - uy * side * wo, ya + uy * (s0 - 2) + ux * side * wo, cs + 1);
+          if (hh(e, cs, 202) < 0.6) add("wirecan", xa + ux * (s0 - 0.5) - uy * side * wo, ya + uy * (s0 - 0.5) + ux * side * wo, cs + 2);
+          if (hh(e, cs, 203) < (cls < 2 ? 0.55 : 0.25)) add("newsbox", xa + ux * (s0 + 1.6) - uy * side * wo, ya + uy * (s0 + 1.6) + ux * side * wo, cs + 3);
+          if (hh(e, cs, 204) < 0.12) add("mailbox", xa + ux * (s0 + 3.4) - uy * side * wo, ya + uy * (s0 + 3.4) + ux * side * wo, cs + 4); }
+        if (db && hh(e, cs, 205) < 0.6) add("hydrant", xa + ux * (s1 + 2) - uy * side * wo, ya + uy * (s1 + 2) + ux * side * wo, cs + 5);
+        if (cls < 2 && len > 50 && hh(e, cs, 206) < 0.3) add("subway", xa + ux * (s0 + 6) - uy * side * wm, ya + uy * (s0 + 6) + ux * side * wm, cs + 6);
+        if (len > 40 && hh(e, cs, 207) < 0.16) add("hotdog", xa + ux * (s1 - 3) - uy * side * wo, ya + uy * (s1 - 3) + ux * side * wo, cs + 7);
+        if (cls < 2 && len > 70 && hh(e, cs, 208) < 0.14) { var sc2 = len * (0.4 + 0.2 * hh(e, cs, 209)); add("citibike", xa + ux * sc2 - uy * side * (cw + 0.9), ya + uy * sc2 + ux * side * (cw + 0.9), cs + 8); }
+        if (len > 60 && hh(e, cs, 210) < 0.05) { var sc3 = len * (0.3 + 0.4 * hh(e, cs, 211)); add("barrier", xa + ux * sc3 - uy * side * wo, ya + uy * sc3 + ux * side * wo, cs + 9); add("barrel", xa + ux * (sc3 + 2.4) - uy * side * wo, ya + uy * (sc3 + 2.4) + ux * side * wo, cs + 10); }
+      }
+      if (len > 40 && hh(e, side, 71) < 0.18) { var sk = len * (0.3 + 0.4 * hh(e, side, 72)); add(NY ? "newsstand" : "kiosk", xa + ux * sk - uy * side * (cw + 1.8), ya + uy * sk + ux * side * (cw + 1.8), e * 31 + side); }
+      else if (cls < 2 && len > 70 && hh(e, side, 78) < 0.5) { var sb2 = len * (0.35 + 0.3 * hh(e, side, 79)); add(NY ? "nybus" : "busstop", xa + ux * sb2 - uy * side * (cw + 1.9), ya + uy * sb2 + ux * side * (cw + 1.9), e * 37 + side); }
     }
   }
   for (var bj = Math.floor((y0 - 8) / 128); bj <= Math.floor((y0 + 72) / 128); bj++) for (var bi = Math.floor((x0 - 8) / 128); bi <= Math.floor((x0 + 72) / 128); bi++) {
@@ -2766,7 +2841,8 @@ function sgProps(c, i, j) {
       var b = sb.list[BL[q]]; if (!b.doors) continue;
       for (var d = 0; d < b.doors.length; d++) {
         var D = b.doors[d], tx = -D.ny, ty = D.nx;
-        if (D.k === "home" && hh(b.id, d, 73) < 0.5) add("bin", D.x + tx * 1.7 + D.nx * 0.6, D.y + ty * 1.7 + D.ny * 0.6, b.id ^ d);
+        if (D.k === "home" && hh(b.id, d, 73) < 0.5) add(NY ? (hh(b.id, d, 212) < 0.5 ? "bags" : "tcans") : "bin", D.x + tx * 1.7 + D.nx * (NY ? 1.4 : 0.6), D.y + ty * 1.7 + D.ny * (NY ? 1.4 : 0.6), b.id ^ d);
+        else if (D.k === "shop" && NY && hh(b.id, d, 213) < 0.25) add("fruit", D.x - tx * 2.2 + D.nx * 1.2, D.y - ty * 2.2 + D.ny * 1.2, b.id ^ (d * 17));
         else if (D.k === "shop" && hh(b.id, d, 80) < 0.3) add("bike", D.x - tx * 1.9 + D.nx * 0.9, D.y - ty * 1.9 + D.ny * 0.9, b.id ^ (d * 13));
       }
       for (var e2 in b.bays) {
@@ -2806,6 +2882,23 @@ function sgProps(c, i, j) {
     for (var k3 = 0; k3 < m; k3++) { cx += F.court[0][k3]; cy += F.court[1][k3]; }
     cx /= m; cy /= m;
     var fs = F.id * 131, bx = F.court[0], by = F.court[1];
+    if (F.ny) { // New York rear gardens: something in every lot strip, a deck or a grill by the house, a shed or vegetable bed at the back
+      var NE = nyYardPrep(F);
+      for (var k7 = 0; k7 < NE.length; k7++) {
+        var ne = NE[k7], ninx = -ne.uy, niny = ne.ux;
+        if ((ne.x + ne.ux * ne.L / 2 - cx) * ninx + (ne.y + ne.uy * ne.L / 2 - cy) * niny > 0) { ninx = -ninx; niny = -niny; }
+        var TT = [0].concat(ne.t, [ne.L]);
+        for (var j7 = 0; j7 + 1 < TT.length; j7++) {
+          var ta = Math.max(0, TT[j7]), tb2 = Math.min(ne.L, TT[j7 + 1]), wl = tb2 - ta, mt = (ta + tb2) / 2, sd7 = fs + k7 * 211 + j7 * 7;
+          if (wl < 3.5) continue;
+          var r7 = hh(sd7, 1, 214), tA7 = r7 < 0.3 ? "ydeck" : r7 < 0.5 ? "grill" : r7 < 0.62 ? "ytable" : r7 < 0.72 ? "pots" : r7 < 0.8 ? "lounge" : r7 < 0.86 ? "ybike" : null;
+          if (tA7) add(tA7, ne.x + ne.ux * mt + ninx * (tA7 === "ydeck" ? 2.6 : 3.2), ne.y + ne.uy * mt + niny * (tA7 === "ydeck" ? 2.6 : 3.2), sd7 + 1);
+          var r8 = hh(sd7, 2, 215), tB7 = r8 < 0.22 ? "gshed" : r8 < 0.4 ? "vbed" : r8 < 0.5 ? "playhouse" : r8 < 0.58 ? "yline" : r8 < 0.66 ? "pots" : null;
+          if (tB7) add(tB7, ne.x + ne.ux * (mt + (hh(sd7, 3, 216) - 0.5) * wl * 0.3) + ninx * 7.5, ne.y + ne.uy * (mt + (hh(sd7, 3, 216) - 0.5) * wl * 0.3) + niny * 7.5, sd7 + 2);
+        }
+      }
+      continue;
+    }
     // a lived-in Moscow courtyard: cars, garages, bins, sheds and lilac along the back walls ...
     for (var k5 = 0; k5 < m; k5++) {
       var k6 = (k5 + 1) % m, ex = bx[k6] - bx[k5], ey = by[k6] - by[k5], el = Math.hypot(ex, ey);
@@ -2838,15 +2931,15 @@ function sgFront(b, fe, od, rule, arch) {
   for (var f = 0; f < fe.length; f++) {
     var e = fe[f], e2 = (e + 1) % n, x0 = p[2 * e], y0 = p[2 * e + 1], ex = p[2 * e2] - x0, ey = p[2 * e2 + 1] - y0, L = Math.hypot(ex, ey);
     if (L < 4) continue;
-    var nb = Math.max(1, Math.round(L / 3.3)), w = L / nb, ux = ex / L, uy = ey / L;
+    var nb = Math.max(1, Math.round(L / (rule.bw || 3.3))), w = L / nb, ux = ex / L, uy = ey / L;
     // outward normal: away from the polygon centre
     var cx = (b.bb[0] + b.bb[2]) / 2, cy = (b.bb[1] + b.bb[3]) / 2, nx = -uy, ny = ux;
     if ((x0 + ex / 2 - cx) * nx + (y0 + ey / 2 - cy) * ny < 0) { nx = -nx; ny = -ny; }
     var busy = od[f] > 12, shops = hh(s, e, 41) < (rule.shop || 0) * (busy ? 1.3 : 0.7), t = [], i;
     for (i = 0; i < nb; i++) t.push(shops ? "S" : "W");
     if (shops) { for (i = 1; i < nb; i += 3 + ((hh(s, i, 42) * 2) | 0)) t[i] = "s"; }
-    var home = Math.min(nb - 1, (hh(s, e, 43) * nb) | 0);
-    if (nb > 2 || !shops) t[home] = "D";
+    var home = rule.stoop ? (hh(s, e, 43) < 0.5 ? 0 : nb - 1) : Math.min(nb - 1, (hh(s, e, 43) * nb) | 0); // a townhouse: its stoop at one end
+    if (nb > 2 || !shops || rule.stoop) t[home] = "D";
     if (arch && f === 0 && nb >= 4) { var ai = Math.max(1, Math.min(nb - 2, (nb / 2) | 0)); t[ai] = "A"; }
     b.bays[e] = { n: nb, w: w, t: t.join("") };
     for (i = 0; i < nb; i++) {
@@ -2895,13 +2988,13 @@ function sgBuild(c) {
     var pit = hh(seed, 4, 1) < kit.pitched;
     if (kit.mansard) pit = false;
     var gl = kit.glass || (kit.glassP && hh(seed, 14, 1) < kit.glassP);
-    var b = { k: 3, p: p, n: n, z0: 0, h: fl * 3.1 + (pit ? 0.4 : kit.mansard ? 3.2 : 0.9), roof: pit ? (rect ? (hh(seed, 5, 1) < 0.75 ? 1 : 3) : 6) : kit.mansard ? 5 : 0, kit: kit, rc: pit ? pickRoof(kit, hh(seed, 6, 1)) : (kit.glass ? kit.roofs[0] : ROOF_G[(hh(seed, 7, 1) * ROOF_G.length) | 0]),
+    var b = { k: 3, p: p, n: n, z0: 0, h: fl * 3.1 + (pit ? 0.4 : kit.mansard ? 3.2 : 0.9), roof: pit ? (rect ? (hh(seed, 5, 1) < 0.75 ? 1 : 3) : 6) : kit.mansard ? 5 : 0, kit: kit, rc: pit ? pickRoof(kit, hh(seed, 6, 1)) : (kit.glass ? kit.roofs[0] : kit.ny ? NY_ROOF[(hh(seed, 7, 1) * NY_ROOF.length) | 0] : ROOF_G[(hh(seed, 7, 1) * ROOF_G.length) | 0]),
       wc: kit.walls[(hh(seed, 8, 1) * kit.walls.length) | 0], win: gl ? 3 : 1, trim: kit.trim, aw: hh(seed, 9, 1) < kit.aw ? AWN[(hh(seed, 10, 1) * AWN.length) | 0] : -1,
       rect: rect, id: seed | 0, bb: [bx0, by0, bx1, by1] };
     if (kit.mansard) b.rc = pickRoof(kit, hh(seed, 6, 1)); else if (pit) b.rc = pickRoof(kit, hh(seed, 6, 1)); else if (!kit.glass && rule === DRULE.historic && hh(seed, 11, 1) < 0.35) b.rc = 0xa9a39a;
     var id = sb.list.length; sb.list.push(b);
     bucketAdd(sb.B, 128, bx0, by0, bx1, by1, id);
-    if (kit.wt && hh(seed, 15, 1) < kit.wt && polyArea(p) > 120) { // rooftop water tank on legs
+    if (kit.wt && !(SPR.ri && kit.ny && SPR.g.roof.wtower) && hh(seed, 15, 1) < kit.wt && polyArea(p) > 120) { // rooftop water tank on legs
       var wx = cx + (hh(seed, 16, 1) - 0.5) * 4, wy = cy + (hh(seed, 17, 1) - 0.5) * 4;
       LB = sb.list; addPart("cyl", { cx: wx, cy: wy, r: 1.9, z0: b.h + 1.6, h: 3.4, col: 0x8a5a3a, win: 0, rc: 0x6e4630 }); addPart("cone", { cx: wx, cy: wy, r: 2.1, z0: b.h + 5, h: 1.6, col: 0x5a3a28 }); LB = null;
       for (var wq = sb.list.length - 2; wq < sb.list.length; wq++) { var wb = sb.list[wq].bb; bucketAdd(sb.B, 128, wb[0], wb[1], wb[2], wb[3], wq); }
@@ -2947,7 +3040,7 @@ function sgTrees(c, i, j) {
   if (T) return T;
   T = []; sb.T.set(key, T);
   var g = c.sg, E = g.E, x0 = i * 64, y0 = j * 64, k, q;
-  var L = g.EB.get(key);
+  var L = g.EB.get(key), NY = c.lm === "nyc";
   if (L) for (q = 0; q < L.length; q++) {
     var e = L[q], cls = E.cls[e], cw = EC[cls][0], sw = EC[cls][1], ux = E.ux[e], uy = E.uy[e], len = E.len[e];
     var da = g.adj[E.a[e]].length > 2, db = g.adj[E.b[e]].length > 2;

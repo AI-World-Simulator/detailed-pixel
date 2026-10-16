@@ -106,7 +106,7 @@ def main():
                     for b, hm in zip(bands, Hm):
                         h = max(1, round(hm * sc * g['stf']))
                         b2 = b.copy(); b2[..., 3] = 255
-                        parts.append(pixelize(b2, w, g.get('colors', 24), height=h))
+                        parts.append(pixelize(b2, w, g.get('colors', 24), height=h, sharp=g.get('sharp', 0)))
                     m = np.concatenate(parts, 0); m[..., 3] = 255
                     mips.append((m, w / Wm, [pp.shape[0] for pp in parts]))
                 cats.setdefault(fd['cat'], []).append((fd['f'], mips, {'Wm': Wm, 'Hc': Hm[0], 'Hf': Hm[1], 'Hg': Hm[2], 'nb': nb, 'bf': bf, 'keep': bool(fd.get('keep')), 'gt': fd.get('gt', ''), 'gm': {k: [[round((r[0] - x0) / (x1 - x0), 5), round((r[1] - x0) / (x1 - x0), 5)] for r in v] for k, v in fd.get('gm', {}).items()}, 'wall': [int(v) for v in wall]}))
@@ -131,7 +131,7 @@ def main():
                     for b, hm in zip(bands, Hm):
                         h = max(1, round(hm * sc * g['stf']))
                         b2 = b.copy(); b2[..., 3] = 255
-                        parts.append(pixelize(b2, w, g.get('colors', 24), height=h))
+                        parts.append(pixelize(b2, w, g.get('colors', 24), height=h, sharp=g.get('sharp', 0)))
                     m = np.concatenate(parts, 0)
                     m = m.copy(); m[..., 3] = 255
                     mips.append((m, sc, [p.shape[0] for p in parts]))
@@ -149,7 +149,7 @@ def main():
                 else:
                     a = seamless(np.asarray(Image.open(f).convert('RGBA')).astype(np.float32), g.get('crop', 512))
                 a[..., 3] = 255
-                mips = [pixelize(a, w, g.get('colors', 16)) for w in g['widths']]
+                mips = [pixelize(a, w, g.get('colors', 16), sharp=g.get('sharp', 0)) for w in g['widths']]
                 cats[cat] = [(f, mips)]
             groups[gname] = cats
             print(gname, list(cats))
@@ -178,11 +178,15 @@ def main():
             cat = tree_cat(a) if g.get('classify') == 'hue' else g.get('cat', 'a')
             if path in g.get('override', {}):
                 cat = g['override'][path]
+            elif os.path.dirname(path) in g.get('only', []):   # sheets where only the named sprites are wanted
+                continue
+            if cat == '-':
+                continue
             mips = []
             for w in g['widths']:
                 if w > a.shape[1] * 1.05:
                     break
-                mips.append(pixelize(a, w, g.get('colors', 14), g.get('outline', False)))
+                mips.append(pixelize(a, w, g.get('colors', 14), g.get('outline', False), sharp=g.get('sharp', 0)))
             if not mips:
                 continue
             cats.setdefault(cat, []).append((path, mips))
@@ -204,6 +208,7 @@ def main():
                     flat.append((gname, cat, si, mi, m, info))
     flat.sort(key=lambda t: -t[4].shape[0])
     AW = 1024
+    while AW < max(t[4].shape[1] for t in flat) + 2: AW *= 2
     x = y = sh = 0
     pos = []
     for t in flat:
