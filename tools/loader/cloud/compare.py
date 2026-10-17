@@ -6,6 +6,7 @@
    ~/ComfyUI/.venv/bin/python tools/loader/cloud/compare.py plan            what would be sent + free cost checks
    ~/ComfyUI/.venv/bin/python tools/loader/cloud/compare.py run --service pixellab|rd [--chars boy,woman] [--anims walk] --yes
    ~/ComfyUI/.venv/bin/python tools/loader/cloud/compare.py report          sheets + metrics -> tools/loader/cloud/report/
+   ~/ComfyUI/.venv/bin/python tools/loader/cloud/compare.py page            animated side-by-side page -> tools/loader/cloud/compare.html
    Paid calls happen only with --yes. Every paid call is journalled (journal.jsonl: job/task ids, idempotency keys)
    and skipped on re-runs when its output exists, so nothing is bought twice by accident."""
 import base64, io, json, os, sys, time, uuid
@@ -287,7 +288,106 @@ def cmd_report():
         print(k.ljust(30), v)
 
 
+def uri(img):
+    return "data:image/png;base64," + b64png(img)
+
+
+def cmd_page():
+    """tools/loader/cloud/compare.html: every resident x action animated side by side, plus two street scenes
+    (our walk frames vs Retro Diffusion + our post-process). Self-contained (frames inlined), stays local (.gitignore)."""
+    REP.mkdir(exist_ok=True)
+    cols = [("ours", "Наш конвейер"), ("pixellab", "PixelLab"), ("pixellab+ours", "PixelLab + наша обработка"),
+            ("rd", "Retro Diffusion"), ("rd+ours", "Retro Diffusion + наша обработка")]
+    MS = {"walk": 130, "crouch": 150, "wave": 150}
+    data, metr = {}, json.load(open(REP / "metrics.json")) if (REP / "metrics.json").exists() else {}
+    for an, spec in ANIMS.items():
+        for ch in CHARS:
+            row = {"ours": [uri(ours_padded(ch, f)) for f in spec["ours"]]}
+            for svc in ("pixellab", "rd"):
+                src = svc
+                if svc == "rd" and (OUT / "rd_rmbg" / ch / an / "frame_00.png").exists():
+                    src = "rd_rmbg"                      # the clean retry replaces a background-filled original
+                d = OUT / src / ch / an
+                fr = [Image.open(p).convert("RGBA") for p in sorted(d.glob("frame_*.png"))] if d.exists() else []
+                if fr:
+                    row[svc] = [uri(f) for f in fr]; row[svc + "+ours"] = [uri(f) for f in postprocess(ch, fr)]
+                    row[svc + "_src"] = src
+            data[f"{an}/{ch}"] = row
+    html = """<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Облака против нашего конвейера</title>
+<style>
+:root { color-scheme: dark; } body { margin: 0; background: #0b1626; color: #eef3fa; font: 14px/1.4 ui-monospace, Menlo, monospace; }
+header, section { max-width: 1240px; margin: 0 auto; padding: 12px 16px; } h1 { font-size: 18px; margin: 8px 0; } h2 { font-size: 15px; margin: 18px 0 8px; color: #f2a516; }
+p { color: #93a8c3; margin: 4px 0; } .grid { display: grid; grid-template-columns: 120px repeat(5, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.hd { color: #93a8c3; font-size: 12px; text-align: center; } .lbl { color: #cfd8e6; font-size: 13px; }
+.cell { background: #13233a; box-shadow: inset 0 0 0 1px #2a4466; display: flex; flex-direction: column; align-items: center; padding: 4px; min-height: 40px; }
+.cell canvas { image-rendering: pixelated; width: 100%; max-width: 192px; aspect-ratio: 1; } .m { font-size: 11px; color: #9fb0c6; text-align: center; }
+.scenes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 12px; }
+.scene canvas { width: 100%; image-rendering: pixelated; background: #0b1626; box-shadow: inset 0 0 0 1px #2a4466; }
+</style></head><body>
+<header><h1>PixelLab и Retro Diffusion против нашего конвейера</h1>
+<p>Каждая ячейка — анимация в цикле (наши кадры — 4 рисунка, облака — 6–9). «+ наша обработка» = палитра базы, постановка на землю по обуви,
+голова из базового кадра, удаление оторванных пикселей. Retro Diffusion показан из повтора с remove_bg, где он был. Под ячейкой: голова — доля
+несовпавших пикселей головы с idle (сред./макс.), земля — разброс нижнего ряда, цвета.</p></header>
+<section><h2>В сцене: шествие</h2><div class="scenes">
+<div class="scene"><p>Наши кадры (4 рисунка: шаг, стойка, шаг, стойка)</p><canvas id="sOurs" width="336" height="80"></canvas></div>
+<div class="scene"><p>Retro Diffusion + наша обработка (8 кадров)</p><canvas id="sRd" width="336" height="80"></canvas></div>
+</div></section>
+<section id="rows"></section>
+<script>
+const DATA = %DATA%, METR = %METR%, MS = %MS%, COLS = %COLS%;
+const load = (u) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = u; });
+const players = [];
+async function player(canvas, uris, ms) { const fr = await Promise.all(uris.map(load)); players.push({ c: canvas.getContext('2d'), fr, ms, t0: performance.now() }); }
+function tick(now) {
+  for (const p of players) { const k = Math.floor(Math.max(0, now - p.t0) / p.ms) % p.fr.length; if (k !== p.k) { p.k = k; p.c.clearRect(0, 0, 64, 64); p.c.drawImage(p.fr[k], 0, 0); } }
+  scenes(now); requestAnimationFrame(tick);
+}
+const rows = document.getElementById('rows');
+for (const an of ['walk', 'crouch', 'wave']) {
+  const h = document.createElement('h2'); h.textContent = {walk: 'Ходьба', crouch: 'Присесть и положить камень', wave: 'Взмах рукой'}[an]; rows.appendChild(h);
+  const g = document.createElement('div'); g.className = 'grid'; rows.appendChild(g);
+  g.appendChild(document.createElement('div')); for (const [, t] of COLS) { const d = document.createElement('div'); d.className = 'hd'; d.textContent = t; g.appendChild(d); }
+  for (const ch of ['woman', 'builder', 'oldman', 'boy']) {
+    const row = DATA[an + '/' + ch]; const l = document.createElement('div'); l.className = 'lbl'; l.textContent = ch; g.appendChild(l);
+    for (const [k] of COLS) {
+      const cell = document.createElement('div'); cell.className = 'cell'; g.appendChild(cell);
+      if (!row[k]) { cell.textContent = '—'; continue; }
+      const cv = document.createElement('canvas'); cv.width = cv.height = 64; cell.appendChild(cv); player(cv, row[k], MS[an]);
+      const src = k.startsWith('rd') ? (row.rd_src || 'rd') + (k.endsWith('+ours') ? '+ours' : '') : k;
+      const m = METR[an + ' ' + ch + ' ' + src];
+      if (m) { const t = document.createElement('div'); t.className = 'm'; t.textContent = `голова ${(m.head_mismatch_mean * 100).toFixed(0)}/${(m.head_mismatch_max * 100).toFixed(0)}% · земля ±${m.ground_spread} · ${m.colours} цв.`; cell.appendChild(t); }
+    }
+  }
+}
+// street scenes: walkers cross at 20 px/s; each walker's frames from its walk row
+const walkers = {};
+async function prepScenes() {
+  for (const [id, key] of [['sOurs', 'ours'], ['sRd', 'rd+ours']]) {
+    walkers[id] = await Promise.all(['woman', 'builder', 'boy', 'oldman'].map(async (ch, k) => ({ fr: await Promise.all((DATA["walk/" + ch][key] || DATA["walk/" + ch].ours).map(load)), off: k * 33 })));
+  }
+}
+function scenes(now) {
+  for (const id of Object.keys(walkers)) {
+    const c = document.getElementById(id).getContext('2d'); c.clearRect(0, 0, 336, 80);
+    c.fillStyle = '#3c475a'; c.fillRect(0, 70, 336, 10); c.fillStyle = '#5b6a82'; c.fillRect(0, 70, 336, 1);
+    for (const w of walkers[id]) {
+      const x = Math.floor(((now / 50) + w.off * 3) % 400) - 64;          // 20 art px per second, whole pixels
+      const ms = id === 'sOurs' ? 130 : 130 * 4 / w.fr.length * 2;        // our 4-frame cycle vs an 8-frame cycle at the same pace
+      const f = w.fr[Math.floor(Math.max(0, now) / ms) % w.fr.length];
+      if (f) c.drawImage(f, x, 70 - 60);
+    }
+  }
+}
+prepScenes().then(() => requestAnimationFrame(tick));
+</script></body></html>"""
+    html = (html.replace("%DATA%", json.dumps(data)).replace("%METR%", json.dumps(metr))
+            .replace("%MS%", json.dumps(MS)).replace("%COLS%", json.dumps(cols)))
+    (HERE / "compare.html").write_text(html)
+    print("compare.html", len(html) // 1024, "KB")
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     {"prep": lambda: cmd_prep(), "plan": lambda: cmd_plan(sys.argv[2:]), "run": lambda: cmd_run(sys.argv[2:]),
-     "report": lambda: cmd_report()}.get(cmd, lambda: print(__doc__))()
+     "report": lambda: cmd_report(), "page": lambda: cmd_page()}.get(cmd, lambda: print(__doc__))()
