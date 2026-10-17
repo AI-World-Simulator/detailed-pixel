@@ -99,7 +99,10 @@
 | Узлы ComfyUI: Image Edit Difference Mask (WepeNerd), LockPixel Pad, Pixel Drift Fix | диф-маска с вето («Fixed head» локально), замер и возврат дрейфа | открытые |
 | TexturePacker / Spine / Rive | pivot на кадр / скелет / state machine | для нашего лоадера не нужны: холст единый, Spine и Rive ломают пиксели или тяжелы |
 
-Эталон качества: прогнать тех же персонажей через PixelLab/Retro Diffusion (~$5) и сравнить отчёты QA с локальными.
+Проверено на наших жителях ([tools/loader/cloud/RESULTS.md](../tools/loader/cloud/RESULTS.md)): оба сервиса дают более
+плавное движение (6–9 кадров), но **лицо перерисовывают** — их кадры всегда пропускать через нашу постобработку
+(`tools/loader/cloud/compare.py`: палитра, ряд обуви, голова из базы). Retro Diffusion — только с `remove_bg: true`
+(иначе `custom_action` заливает фон) и с постановкой на землю; PixelLab text-v3 — с перекраской в нашу палитру.
 
 ## 7. Чек-лист перед показом
 

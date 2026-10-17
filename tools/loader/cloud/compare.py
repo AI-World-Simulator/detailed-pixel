@@ -109,9 +109,10 @@ def pl_run(ch, an, key, req):
 RD = "https://api.retrodiffusion.ai/v2"
 
 
-def rd_payload(ch, an):
+def rd_payload(ch, an, rmbg=False):
     a = ANIMS[an]
-    return {"prompt": a["rd"], "prompt_style": a["rd_style"], "width": CANVAS, "height": CANVAS, "num_images": 1,
+    extra = {"remove_bg": True} if rmbg else {}
+    return {**extra, "prompt": a["rd"], "prompt_style": a["rd_style"], "width": CANVAS, "height": CANVAS, "num_images": 1,
             "frames_duration": a["frames"], "input_image": b64png(Image.open(IN / f"{ch}.png")),
             "input_palette": b64png(Image.open(IN / f"{ch}_palette.png").convert("RGB")), "seed": 7,
             "bypass_prompt_expansion": True}
@@ -122,10 +123,10 @@ def rd_cost(ch, an, key, req):
     r.raise_for_status(); return float(r.json()["balance_cost"])
 
 
-def rd_run(ch, an, key, req):
+def rd_run(ch, an, key, req, rmbg=False):
     idem = str(uuid.uuid4())
-    journal({"service": "rd", "char": ch, "anim": an, "idempotency_key": idem, "state": "submitting"})
-    r = req.post(f"{RD}/inferences", headers={"X-RD-Token": key, "Idempotency-Key": idem}, json=rd_payload(ch, an), timeout=(10, 120))
+    journal({"service": "rd" + ("_rmbg" if rmbg else ""), "char": ch, "anim": an, "idempotency_key": idem, "state": "submitting"})
+    r = req.post(f"{RD}/inferences", headers={"X-RD-Token": key, "Idempotency-Key": idem}, json=rd_payload(ch, an, rmbg), timeout=(10, 120))
     if r.status_code >= 400:
         raise RuntimeError(f"RD {r.status_code}: {r.text[:400]}")
     tid = r.json()["task_id"]
@@ -178,10 +179,11 @@ def cmd_plan(args):
 
 def cmd_run(args):
     import requests
-    svc = args[args.index("--service") + 1]
+    svc = args[args.index("--service") + 1]          # pixellab | rd | rd_rmbg (rd with remove_bg)
     chars = args[args.index("--chars") + 1].split(",") if "--chars" in args else CHARS
     anims = args[args.index("--anims") + 1].split(",") if "--anims" in args else list(ANIMS)
     env = keys(); key = env.get("PIXELLAB_SECRET" if svc == "pixellab" else "RD_API_KEY")
+    runner = pl_run if svc == "pixellab" else (lambda c, a, k, r: rd_run(c, a, k, r, rmbg=svc == "rd_rmbg"))
     if not key:
         sys.exit(f"no key for {svc} in ~/.config/detailed-pixel/cloud.env")
     for ch in chars:
@@ -191,7 +193,7 @@ def cmd_run(args):
                 print(f"{svc} {ch}/{an}: already there, skipped"); continue
             if "--yes" not in args:
                 print(f"[dry run] would call {svc} for {ch}/{an} (add --yes to pay)"); continue
-            frames = (pl_run if svc == "pixellab" else rd_run)(ch, an, key, requests)
+            frames = runner(ch, an, key, requests)
             d.mkdir(parents=True, exist_ok=True)
             for k, f in enumerate(frames):
                 f.save(d / f"frame_{k:02d}.png")
@@ -218,10 +220,16 @@ def postprocess(ch, frames):
     pal = np.unique(q0[a0].reshape(-1, 3), axis=0).astype(np.uint8)
     keys_ = anim.shoe_keys(q0, a0); c0 = anim.contact_row(q0, a0, keys_); neck = anim.neck_row(a0)
     out = []
+    from scipy import ndimage as nd
     for f in frames:
         rgb, a = as_cells(f)
+        lab, n = nd.label(a, structure=np.ones((3, 3)))       # drop detached bits (flying hair, sparkles, stray dots)
+        if n > 1:
+            sizes = nd.sum(a, lab, range(1, n + 1)); a = lab == (1 + int(np.argmax(sizes)))
         rgb = anim.map_to(rgb.astype(np.float32), pal)
         dy = c0 - anim.contact_row(rgb, a, keys_)
+        if abs(dy) > 4:                                        # no shoe row found (recoloured shoes): use the lowest row
+            dy = int(np.clip(c0 - int(np.where(a.any(axis=1))[0].max()), -4, 4))
         rgb, a = anim.shift(rgb, dy, 0), anim.shift(a, dy, 0, False)
         rgb, a, _, _ = anim.head_lock(rgb, a, q0, a0, neck, dy, r=3)
         out.append(anim.rgba(rgb, a))
@@ -254,7 +262,7 @@ def cmd_report():
         rows = []
         for ch in CHARS:
             rows.append((f"{ch} ours", [ours_padded(ch, f) for f in spec["ours"]]))
-            for svc in ("pixellab", "rd"):
+            for svc in ("pixellab", "rd", "rd_rmbg"):
                 d = OUT / svc / ch / an
                 fr = [Image.open(p).convert("RGBA") for p in sorted(d.glob("frame_*.png"))] if d.exists() else []
                 if fr:
