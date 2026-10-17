@@ -1,0 +1,9 @@
+Generate exactly one image (use your image generation tool; no code, no files to edit).
+
+Image 1 = CAMERA AND MASSING GUIDE ONLY. A flat-shaded block model of a small one-storey house with a steep gable roof (footprint 8 m x 7 m, the gable end with the door faces front-left), rendered with an ORTHOGRAPHIC game camera pitched 55 degrees down (steep top-down 3/4 view, no perspective). Keep EXACTLY from Image 1: the camera angle, the building's outline, rotation, position and size in the frame (do not move, crop, zoom or rotate), the roof shape and ridge direction, one storey.
+
+Image 2 = APPEARANCE REFERENCE (a real photo). Take from it what the house looks like: green-painted horizontal log walls, white carved window frames (nalichniki), three windows in the gable end, a carved decorated gable with a small attic window, grey weathered plank roof. Ignore the photo's camera angle, perspective, surroundings, the shed, trees and grass. Do not copy the photo's composition.
+
+Image 3 = STYLE REFERENCE ONLY. Do not copy its building or composition; copy only its material and rendering: plasticine / claymation miniature, everything hand-sculpted from matte modelling clay, soft slightly rounded edges, subtle thumbprint and tool-mark texture, chunky simplified details, soft warm studio light from the upper left, gentle ambient occlusion. No outlines, no pixel art, no photorealism.
+
+Output: a square image with the same framing as Image 1: only the house, the Image 2 house redrawn onto the Image 1 block in the Image 3 clay style. Plain flat light grey background (#c3c3c3), no ground plane, no cast shadow on the ground, no other objects, no text.

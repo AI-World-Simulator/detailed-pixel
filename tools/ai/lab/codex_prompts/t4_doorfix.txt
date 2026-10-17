@@ -1,0 +1,11 @@
+Generate exactly one image (use your image generation tool; no code, no files to edit).
+
+Image 1 = EDIT TARGET: a 4 x 2 turnaround sheet of one clay building (8 views).
+Image 2 = DOOR POSITION GUIDE ONLY: the block models of the same 8 views; the dark brown rectangle marks where the front door must be.
+
+Fix ONLY the front doors in Image 1 so they match Image 2:
+- top row, cell 1 (left): the door with its small green canopy must be on the LEFT facade near its right end (as the brown rectangle in Image 2), not on the right facade; replace the wrong door on the right facade with an ordinary window like its neighbours;
+- top row, cell 3: remove the door (replace it with an ordinary window like its neighbours); this view shows no door;
+- top row, cell 4 (right): add the door with its small green canopy on the right facade, at the position of the brown rectangle in Image 2;
+- bottom row: keep exactly as is.
+Keep EVERYTHING ELSE in Image 1 pixel-identical: canvas size, layout, every building's outline, position and size, roofs, chimneys, windows, colours, clay material, lighting and the plain light grey background. Do not redraw or re-frame anything else.

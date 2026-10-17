@@ -10,8 +10,11 @@ def fg_mask(path):
         return np.asarray(im)[..., 3] > 128
     a = np.asarray(im.convert("RGB")).astype(np.float32)
     border = np.concatenate([a[:12].reshape(-1, 3), a[-12:].reshape(-1, 3), a[:, :12].reshape(-1, 3), a[:, -12:].reshape(-1, 3)])
-    fg = np.abs(a - np.median(border, 0)).sum(2) > 40
-    return ndimage.binary_fill_holes(ndimage.binary_opening(fg, iterations=2))
+    # threshold 24 (was 40): pale walls and grey flat roofs on the light grey backdrop were lost (flat4 sheet 0.72 instead of 0.95);
+    # closing then hole filling keeps the silhouette solid; other images move by at most +-0.005 (Codex research, 2026-10-17)
+    fg = np.abs(a - np.median(border, 0)).sum(2) > 24
+    fg = ndimage.binary_closing(ndimage.binary_opening(fg, iterations=2), iterations=2)
+    return ndimage.binary_fill_holes(fg)
 
 def iou(a, b): return float((a & b).sum() / max(1, (a | b).sum()))
 

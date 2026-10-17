@@ -16,6 +16,13 @@ Server: `~/ComfyUI/start.sh` (see `~/ComfyUI/LOCAL_SETUP.md`). All scripts talk 
 | `fix_cells.py SHEET PROXY CELL COLS "c,r …" SEED PREFIX` | Regenerate only broken cells of a sheet (inpainting with the sheet as context), untouched cells stay pixel-identical. |
 | `qscore.py IMG MASK` | Silhouette IoU of a result vs the proxy mask (alpha or background colour). |
 | `commons_fetch.py OUT` | Reference photos from Wikimedia Commons (free licences) + `attribution.json`. |
+| `block_dump.js CITY CX CY HALF OUT.json` | A window of a schema city from the generator (node): buildings with rects, roofs, colours, doors; streets with widths; block faces; trees and street props. |
+| `block_types.py [types]` | Proxies of the block's building types (hip/gable/flat × 4/6 floors, 5 bays of 3.25 m) at the exact 8 view angles of the district, tiled into 4×2 sheets with `_umap` and projection metadata. |
+| `block_assets.py gen\|post\|regen OUT` | Trees, bushes, lamp, bench, kiosk as cut-out sprites and seamless ground textures in the chosen clay style (Z-Image text-to-image). |
+| `block_build.py RAW OUT_SET TYPE=sheet[,sheet] assets=DIR [alias=a:b]` | Assembles the block: per-cell alignment of the sheet to the proxy, buildings stretched by repeating the middle bay, per-face recolour, draw order, textured ground with shadows, `block.js` for `experiments/moscow-block/`. |
+| `block_pick.py ROUND_PREFIX [min_iou]` | Scores generated type sheets per cell against the proxies and prints the `TYPE=sheet,...` arguments for `block_build.py` (both seeds when both are good). |
+| `block_pack.py SET_DIR [quality]` | Shrinks a built set for the repository: sprites and ground to WebP (q60 ≈ 10× smaller than PNG), coordinates in `block.js` rounded, build-only textures dropped. |
+| `codex_prompts/` | Codex (GPT Image) prompts that worked: single view and 8-view sheet from the colour proxy, photo → sprite, edits, character, textures, neutral-colour type sheets. |
 
 Related tools one level up: `angle_sheet.py` (guide sheets for ChatGPT), `measure_sheet.py` (angles + camera pitch of a generated sheet),
 `cut_sheet.py` (sheet → per-angle RGBA sprites + mirrored angles + `sprites.json`).

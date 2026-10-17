@@ -27,7 +27,7 @@ elif "PL" in os.environ or "PD" in os.environ:   # custom building: fit the fram
     CX, CY = 512, 512 + S * (H + RIDGE) * PC / 2
 else:
     S, K, CX, CY = 22.0, 0.0, 512, 560
-LIGHT = np.array([-0.5, 0.4, 0.75]); LIGHT /= np.linalg.norm(LIGHT)
+LIGHT = np.array([float(v) for v in os.environ.get("PLIGHT", "-0.5,0.4,0.75").split(",")]); LIGHT /= np.linalg.norm(LIGHT)
 NEAR = np.array([0.0, K, 1.0]) / math.hypot(K, 1.0) if cam == "oblique" else np.array([0.0, PC, PS])  # towards the viewer
 
 t = math.radians(ang)
@@ -60,7 +60,7 @@ for _, a, b, m in walls:
         for k in range(nb):
             u0, u1 = (k * bw + 0.35 * bw, k * bw + 0.65 * bw) if tall else (k * bw + 0.3 * bw, k * bw + 0.7 * bw)
             z0, z1 = (f * FH + 0.7, f * FH + 2.5) if tall else (f * FH + 0.9, f * FH + 2.3); kind = "win"
-            if f == 0 and k == nb // 2 and float(m @ n) > 0.9: z0, kind = 0.0, "door"   # door only on the real front wall
+            if f == 0 and k == int(os.environ.get("PDOOR", nb // 2)) and float(m @ n) > 0.9: z0, kind = 0.0, "door"   # door only on the real front wall (PDOOR = bay index)
             p0, p1 = a + e * u0, a + e * u1
             holes.append(([T(p0, z0), T(p1, z0), T(p1, z1), T(p0, z1)], kind))
     faces.append(([T(a, 0), T(b, 0), T(b, H), T(a, H)], "wall", fid, m, holes))
@@ -98,7 +98,9 @@ for k, (p, nrm) in enumerate(rf):
     faces.append((p, "roof", 10 + k, nrm, []))
 
 # --- rasterise (painter's order: walls north-first, then roof faces north-first) ---
-COL = {"wall": np.array([226, 206, 168]), "roof": np.array([176, 84, 58]) if roof != "flat" else np.array([150, 150, 146]),
+hexrgb = lambda v: np.array([int(v[i:i + 2], 16) for i in (0, 2, 4)])    # PWALL / PROOF env: facade / roof colour as hex, e.g. e2bf78
+COL = {"wall": hexrgb(os.environ["PWALL"]) if "PWALL" in os.environ else np.array([226, 206, 168]),
+       "roof": hexrgb(os.environ["PROOF"]) if "PROOF" in os.environ else np.array([176, 84, 58]) if roof != "flat" else np.array([150, 150, 146]),
        "win": np.array([52, 62, 78]), "door": np.array([96, 62, 40])}
 gray = Image.new("L", (W, H_IMG), 128); color = Image.new("RGB", (W, H_IMG), (196, 196, 196))
 lines = Image.new("L", (W, H_IMG), 0); linesw = Image.new("L", (W, H_IMG), 0)
@@ -107,6 +109,7 @@ ys, xs = np.mgrid[0:H_IMG, 0:W].astype(np.float32)
 # ground nearness (z = 0): y = (sy - CY)/S
 depth = (K * ((ys + 0.5 - CY) / S)) / math.hypot(K, 1.0) if cam == "oblique" else PC * ((ys + 0.5 - CY) / S / PS)
 dg, dc, dl, dlw, dm, df = (ImageDraw.Draw(x) for x in (gray, color, lines, linesw, mask, fmap))
+umap = np.zeros((H_IMG, W), np.float32)   # u (metres along the front facade, 0 = centre) of the visible surface; NaN-free, mask says where
 LW = 3
 
 def plane_nearness(poly3):
@@ -121,6 +124,8 @@ for poly, kind, fid, nrm, holes in faces:
     for img in (dl, dlw): img.polygon(q, fill=0); img.line(q + [q[0]], fill=255, width=LW)
     m = Image.new("L", (W, H_IMG), 0); ImageDraw.Draw(m).polygon(q, fill=1); mm = np.array(m, dtype=bool)
     a_, b_, c_ = plane_nearness(poly); depth[mm] = (a_ * (xs + 0.5) + b_ * (ys + 0.5) + c_)[mm]
+    Au = np.array([[P(p)[0], P(p)[1], 1.0] for p in poly[:3]]); cu = np.linalg.solve(Au, np.array([float(u @ p) for p in poly[:3]]))
+    umap[mm] = (cu[0] * (xs + 0.5) + cu[1] * (ys + 0.5) + cu[2])[mm]
     for hp, hk in holes:
         hq = [P(p) for p in hp]
         dg.polygon(hq, fill=int(g * 0.35)); dc.polygon(hq, fill=tuple(int(v) for v in COL[hk] * (0.6 + 0.4 * sh)))
@@ -141,4 +146,7 @@ Image.fromarray(np.clip(cn + grain * mk, 0, 255).astype(np.uint8)).save(f"{out_d
 lines.convert("RGB").save(f"{out_dir}/{tag}_lines.png"); linesw.convert("RGB").save(f"{out_dir}/{tag}_linesw.png")
 Image.fromarray(d).convert("RGB").save(f"{out_dir}/{tag}_depth.png")
 mask.save(f"{out_dir}/{tag}_mask.png"); fmap.save(f"{out_dir}/{tag}_faces.png")
+Image.fromarray(np.clip((umap + 300) * 100, 0, 65535).astype(np.uint16)).save(f"{out_dir}/{tag}_umap.png")   # u = v/100 - 300 m
+import json   # projection of this proxy: screen = (CX + S*x, CY + S*(y*PS - z*PC)) for the iso camera
+json.dump(dict(S=S, CX=CX, CY=CY, K=K, PS=PS, PC=PC, pitch=PITCH, angle=ang, L=L, D=D, H=H, ridge=RIDGE, roof=roof, cam=cam), open(f"{out_dir}/{tag}_meta.json", "w"))
 print(tag)

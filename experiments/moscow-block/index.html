@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moscow Block Test</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1c1e21; color: #e8e6e1; font: 13px/1.4 system-ui, -apple-system, sans-serif; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: grab; touch-action: none; }
+  canvas.drag { cursor: grabbing; }
+  #ui { position: fixed; left: 12px; top: 12px; max-width: min(360px, calc(100vw - 48px)); padding: 9px 11px; border-radius: 9px;
+        background: rgba(22, 24, 28, 0.84); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); }
+  #ui b { font-size: 14px; }
+  #ui button { font: inherit; margin: 6px 6px 0 0; padding: 3px 9px; border-radius: 6px; border: 1px solid #555; background: #2b2e33; color: #eee; cursor: pointer; }
+  #ui button.on { background: #45603f; border-color: #79a070; }
+  #info { opacity: 0.8; margin-top: 3px; }
+  #hint { opacity: 0.6; margin-top: 6px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <b>Квартал Москвы: спрайты по типам</b>
+  <div id="info">загрузка…</div>
+  <div>
+    <span id="sets"></span><br><button id="bxray" class="on">силуэты за домами</button><button id="bpeople" class="on">люди</button><button id="bpause">пауза</button>
+  </div>
+  <div id="hint">колесо: зум · перетаскивание: сдвиг · камера 55°, 14 px/м</div>
+</div>
+<script>
+"use strict";
+// The data set (ai = generated sprites, proxy = flat massing proxies) comes from <set>/block.js, written by tools/ai/lab/block_build.py.
+// data sets: ai = local Z-Image clay sheets, codex = Codex (GPT image) clay sheets, proxy = flat massing proxies
+const SETS = { ai: "локальный ИИ (Z-Image)", codex: "Codex (GPT)", proxy: "болванки" };
+const ASKED = new URLSearchParams(location.search).get("set");
+let SET = ASKED || "ai";
+const HAVE = {};
+function loadSet(order) {                                       // first set that exists wins (a set appears once it is generated)
+  const name = order[0], tag = document.createElement("script");
+  tag.src = name + "/block.js";
+  tag.onload = () => { SET = name; HAVE[name] = true; start(); };
+  tag.onerror = () => {
+    if (order.length > 1) loadSet(order.slice(1));
+    else document.getElementById("info").textContent = "нет данных " + name + "/block.js";
+  };
+  document.head.appendChild(tag);
+}
+loadSet(ASKED ? [ASKED] : ["ai", "codex", "proxy"]);
+
+function start() {
+  const B = window.BLOCK, P = B.ppm, PS = B.PS, PC = B.PC, TOP = B.top;
+  const SX = (x) => (x - B.cx + B.frame) * P;
+  const SY = (y, z) => (y - B.cy + B.frame) * P * PS - (z || 0) * P * PC + TOP;
+  const W = B.ground.w, H = B.ground.h + TOP;
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  const info = document.getElementById("info");
+  const sets = document.getElementById("sets");
+  for (const [k, label] of Object.entries(SETS)) {
+    const b = document.createElement("button"); b.textContent = label; b.classList.toggle("on", k === SET);
+    b.onclick = () => { location.search = "?set=" + k; }; sets.appendChild(b);
+  }
+
+  // ---------- assets ----------
+  let pending = 1;
+  const done = () => { if (--pending === 0) ready(); };
+  const load = (src) => { const im = new Image(); pending++; im.onload = done; im.onerror = done; im.src = SET + "/" + src; return im; };
+  const ground = load(B.ground.file);
+  const objs = B.objects.slice().sort((a, b) => a.z - b.z);
+  const treeSpr = (B.tree_sprites || []).map((t) => Object.assign({ im: load(t.file) }, t));
+  const propSpr = {};
+  for (const [k, t] of Object.entries(B.prop_sprites || {})) propSpr[k] = Object.assign({ im: load(t.file) }, t);
+  for (const o of objs) {
+    if (o.kind === "b") o.im = load(o.spr);
+    const xs = o.p.filter((_, i) => i % 2 === 0);
+    o.bx0 = Math.min(...xs); o.bx1 = Math.max(...xs);
+  }
+  done();
+
+  // ---------- static objects ----------
+  const hash = (n) => { n = Math.imul(n ^ (n >>> 15), 0x2c1b3c6d); n = Math.imul(n ^ (n >>> 12), 0x297a2d39); return ((n ^ (n >>> 15)) >>> 0) / 4294967296; };
+  const GREENS = [["#4f7a3a", "#6f9a4c", "#94b866"], ["#3f6b3e", "#5c8a50", "#86ad6c"], ["#5a7d36", "#7da04a", "#a7c46a"], ["#6b7f3a", "#8c9f4f", "#b3c070"]];
+  function drawTree(c, o) {
+    const x = SX(o.x), r = o.r * P, zc = 2.0 + o.r * 1.15;
+    if (treeSpr.length) {
+      const t = treeSpr[Math.floor(hash(o.id) * treeSpr.length)];
+      const s = (o.r * 2.2 * P) / t.w;                          // crown width on screen = 2.2 r metres
+      c.drawImage(t.im, x - t.ax * s, SY(o.y) - t.ay * s, t.im.width * s, t.im.height * s);
+      return;
+    }
+    const y = SY(o.y, zc), g = GREENS[(o.pal || 0) % GREENS.length];
+    c.strokeStyle = "#5b4636"; c.lineWidth = Math.max(1.5, 0.35 * P);
+    c.beginPath(); c.moveTo(x, SY(o.y)); c.lineTo(x, y); c.stroke();
+    c.fillStyle = g[0]; c.beginPath(); c.arc(x + r * 0.12, y + r * 0.1, r, 0, 7); c.fill();
+    c.fillStyle = g[1]; c.beginPath(); c.arc(x - r * 0.12, y - r * 0.12, r * 0.8, 0, 7); c.fill();
+    c.fillStyle = g[2]; c.beginPath(); c.arc(x - r * 0.35, y - r * 0.35, r * 0.4, 0, 7); c.fill();
+  }
+  function box(c, x, y, w, d, h, top, side, front) {             // small axis-aligned box (metres) for kiosks, cars
+    const x0 = SX(x - w / 2), x1 = SX(x + w / 2), yb = SY(y + d / 2), yt = SY(y - d / 2);
+    const hz = h * P * PC;
+    c.fillStyle = front; c.fillRect(x0, yb - hz, x1 - x0, hz);
+    c.fillStyle = top; c.fillRect(x0, yt - hz, x1 - x0, yb - yt);
+  }
+  function drawProp(c, o) {
+    const sp = propSpr[o.t];
+    if (sp) { const s = P / sp.ppm; c.drawImage(sp.im, SX(o.x) - sp.ax * s, SY(o.y) - sp.ay * s, sp.im.width * s, sp.im.height * s); return; }
+    if (Object.keys(propSpr).length) return;                    // a styled set: props without a sprite would look foreign, skip them
+    const x = SX(o.x), y = SY(o.y);
+    switch (o.t) {
+      case "lamp":
+        c.strokeStyle = "#3a3d40"; c.lineWidth = Math.max(1, 0.18 * P);
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x, SY(o.y, 4.6)); c.stroke();
+        c.fillStyle = "#f3e2a8"; c.beginPath(); c.arc(x, SY(o.y, 4.7), 0.32 * P, 0, 7); c.fill(); break;
+      case "bench": box(c, o.x, o.y, 1.8, 0.6, 0.5, "#8a6440", "#6b4c31", "#6b4c31"); break;
+      case "kiosk": case "busstop": box(c, o.x, o.y, 2.6, 1.8, 2.5, "#c9c2b0", "#8f8a7c", o.t === "kiosk" ? "#3f7f6a" : "#7a8792"); break;
+      case "pcar": { const col = ["#b23a32", "#e0ddd2", "#2e4b78", "#3b3d40", "#7c8a8f"][Math.floor(hash(o.id) * 5)];
+        box(c, o.x, o.y, 4.3, 1.8, 1.35, col, col, col); box(c, o.x + 0.2, o.y, 2.2, 1.6, 1.0, "#9db0bd", col, "#56626b"); break; }
+      case "lilac": case "hedge": case "flower":
+        c.fillStyle = o.t === "lilac" ? "#9b84b8" : o.t === "flower" ? "#d36d7c" : "#557a3e";
+        c.beginPath(); c.ellipse(x, y - 0.4 * P * PC, 0.9 * P, 0.7 * P, 0, 0, 7); c.fill(); break;
+      case "bin": case "bins3": case "container": box(c, o.x, o.y, o.t === "bin" ? 0.6 : 2.2, 0.6, 1.0, "#4b5a4d", "#3b463d", "#3b463d"); break;
+      default: break;
+    }
+  }
+  function drawObj(c, o) {
+    if (o.kind === "b") c.drawImage(o.im, Math.round(SX(o.x) - o.ax), Math.round(SY(o.y) - o.ay));
+    else if (o.kind === "tree") drawTree(c, o);
+    else drawProp(c, o);
+  }
+
+  let stat = null;
+  function ready() {
+    stat = document.createElement("canvas"); stat.width = W; stat.height = H;
+    const s = stat.getContext("2d");
+    s.fillStyle = "#c4bea8"; s.fillRect(0, 0, W, H);
+    s.drawImage(ground, 0, TOP);
+    for (const o of objs) drawObj(s, o);
+    fit(); requestAnimationFrame(frame);
+  }
+
+  // ---------- people ----------
+  const segs = B.walks.filter((w) => [w[0], w[2]].every((v) => Math.abs(v - B.cx) < B.frame - 2) && [w[1], w[3]].every((v) => Math.abs(v - B.cy) < B.frame - 2));
+  const ends = [];
+  segs.forEach((w, i) => { ends.push({ i, e: 0, x: w[0], y: w[1] }, { i, e: 1, x: w[2], y: w[3] }); });
+  const CLOTH = ["#c0392b", "#2c3e50", "#d4a017", "#3a6ea5", "#6c3483", "#e8e2d0", "#3b7d4f", "#8e5b3a", "#222428", "#d35f8a"];
+  const SKIN = ["#f1c9a5", "#d9a77c", "#a8754f", "#e8b98f"];
+  const people = [];
+  const N = Math.min(220, segs.length * 2);
+  for (let k = 0; k < N; k++) {
+    const i = Math.floor(Math.random() * segs.length), w = segs[i], t = Math.random();
+    people.push({ path: [], x: w[0] + (w[2] - w[0]) * t, y: w[1] + (w[3] - w[1]) * t, seg: i, dir: Math.random() < 0.5 ? 0 : 1,
+                  v: 0.9 + Math.random() * 0.7, ph: Math.random() * 6, lat: (Math.random() - 0.5) * 1.6,
+                  top: CLOTH[Math.floor(Math.random() * CLOTH.length)], leg: ["#2f3542", "#3b4f7a", "#5a4632", "#2a2a2e"][k % 4],
+                  skin: SKIN[k % SKIN.length], hair: ["#2b2018", "#5a3b22", "#c9a25a", "#8a8f96", "#1d1d20"][k % 5], occ: false });
+    const p = people[k]; p.path.push(p.dir ? [w[0], w[1]] : [w[2], w[3]]);
+  }
+  function nextLeg(p) {
+    const w = segs[p.seg], ex = p.dir ? w[0] : w[2], ey = p.dir ? w[1] : w[3];
+    const near = ends.filter((q) => q.i !== p.seg && Math.hypot(q.x - ex, q.y - ey) < 22);
+    if (!near.length) { p.dir ^= 1; const w2 = segs[p.seg]; p.path.push(p.dir ? [w2[0], w2[1]] : [w2[2], w2[3]]); return; }
+    const q = near[Math.floor(Math.random() * near.length)], w2 = segs[q.i];
+    p.seg = q.i; p.dir = q.e === 0 ? 0 : 1;                  // enter at that end, walk to the other one
+    p.path.push([q.x, q.y], p.dir ? [w2[0], w2[1]] : [w2[2], w2[3]]);
+  }
+  function stepPeople(dt) {
+    for (const p of people) {
+      let left = p.v * dt;
+      while (left > 0) {
+        if (!p.path.length) nextLeg(p);
+        const [tx, ty] = p.path[0], dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+        if (d <= left) { p.x = tx; p.y = ty; left -= d; p.path.shift(); }
+        else { p.x += dx / d * left; p.y += dy / d * left; p.hx = dx / d; p.hy = dy / d; left = 0; }
+      }
+      p.ph += dt * p.v * 5.2;
+    }
+  }
+  const PH = 1.7 * P * PC;                                   // person height on screen
+  function personPos(p) { const ox = p.hy ? -p.hy * p.lat : 0, oy = p.hx ? p.hx * p.lat : 0; return [p.x + ox, p.y + oy]; }
+  function drawPerson(c, p, sil) {
+    const [wx, wy] = personPos(p), x = SX(wx), y = SY(wy), h = PH, sw = Math.sin(p.ph) * 0.13 * P;
+    if (sil) {
+      // a quiet "x-ray" ghost: translucent light figure with a thin dark outline, readable on roofs of any colour
+      c.beginPath(); c.roundRect(x - 0.2 * P, y - h * 0.84, 0.4 * P, h * 0.84, 0.18 * P); c.moveTo(x + 0.16 * P, y - h * 0.9); c.arc(x, y - h * 0.9, 0.16 * P, 0, 7);
+      c.fillStyle = "rgba(255, 250, 235, 0.45)"; c.fill();
+      c.strokeStyle = "rgba(30, 30, 40, 0.55)"; c.lineWidth = Math.max(0.6, 0.05 * P); c.stroke();
+      return;
+    }
+    // little clay figures: soft shadow, rounded legs, a capsule body, a head with hair and a highlight
+    c.fillStyle = "rgba(20, 24, 30, 0.22)"; c.beginPath(); c.ellipse(x + 0.25 * P, y, 0.42 * P, 0.22 * P, 0, 0, 7); c.fill();
+    c.strokeStyle = p.leg; c.lineWidth = Math.max(1.2, 0.16 * P); c.lineCap = "round";
+    c.beginPath(); c.moveTo(x - 0.07 * P, y - h * 0.45); c.lineTo(x - 0.07 * P + sw, y - 0.05 * P);
+    c.moveTo(x + 0.07 * P, y - h * 0.45); c.lineTo(x + 0.07 * P - sw, y - 0.05 * P); c.stroke();
+    c.fillStyle = p.top; c.beginPath(); c.roundRect(x - 0.23 * P, y - h * 0.84, 0.46 * P, h * 0.42, 0.2 * P); c.fill();
+    c.fillStyle = "rgba(255, 255, 255, 0.18)"; c.beginPath(); c.roundRect(x - 0.2 * P, y - h * 0.82, 0.16 * P, h * 0.3, 0.08 * P); c.fill();
+    c.fillStyle = p.skin; c.beginPath(); c.arc(x, y - h * 0.9, 0.17 * P, 0, 7); c.fill();
+    c.fillStyle = p.hair; c.beginPath(); c.arc(x, y - h * 0.93, 0.17 * P, Math.PI, 0); c.fill();
+    c.fillStyle = "rgba(255, 255, 255, 0.35)"; c.beginPath(); c.arc(x - 0.06 * P, y - h * 0.95, 0.05 * P, 0, 7); c.fill();
+  }
+  function yrange(p, x) {
+    let lo = Infinity, hi = -Infinity; const n = p.length / 2;
+    for (let i = 0; i < n; i++) {
+      const x0 = p[2 * i], y0 = p[2 * i + 1], x1 = p[2 * ((i + 1) % n)], y1 = p[2 * ((i + 1) % n) + 1];
+      if ((x0 - x) * (x1 - x) <= 0 && x0 !== x1) { const y = y0 + (x - x0) / (x1 - x0) * (y1 - y0); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+    }
+    return lo <= hi ? [lo, hi] : null;
+  }
+  function inPoly(poly, x, y) {
+    let ins = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins;
+    }
+    return ins;
+  }
+  // objects that stand in front of a person and overlap them on screen: redrawn over the person, clipped to the person box
+  function frontOf(p) {
+    const [wx, wy] = personPos(p), x = SX(wx), y = SY(wy), out = [];
+    let occ = false;
+    for (const o of objs) {
+      if (o.kind === "b") {
+        if (wx < o.bx0 - 0.4 || wx > o.bx1 + 0.4) continue;
+        const r = yrange(o.p, Math.min(o.bx1 - 0.01, Math.max(o.bx0 + 0.01, wx)));
+        if (!r || r[0] <= wy + 0.05) continue;
+        const sx0 = SX(o.x) - o.ax, sy0 = SY(o.y) - o.ay;
+        if (x + 4 < sx0 || x - 4 > sx0 + o.w || y + 2 < sy0 || y - PH - 3 > sy0 + o.h) continue;
+        out.push(o);
+        if (!occ && inPoly(o.hull, x, y - PH * 0.5)) occ = true;
+      } else if (o.kind === "tree") {
+        if (o.y <= wy || Math.abs(o.x - wx) > o.r + 0.4 || o.y - wy > 12) continue;
+        out.push(o);
+        const zc = 2.0 + o.r * 1.15;
+        if (!occ && Math.hypot(x - SX(o.x), (y - PH * 0.5) - SY(o.y, zc)) < o.r * P * 0.8) occ = true;
+      } else if (o.t === "kiosk" || o.t === "busstop" || o.t === "pcar") {
+        if (o.y <= wy || Math.abs(o.x - wx) > 2.4 || o.y - wy > 3) continue;
+        out.push(o);
+      }
+    }
+    return [out, occ];
+  }
+
+  // ---------- view ----------
+  const view = { s: 1, ox: 0, oy: 0 };
+  let dpr = 1;
+  function resize() { dpr = window.devicePixelRatio || 1; cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr); }
+  function fit() {
+    resize();
+    const q = new URLSearchParams(location.search);              // ?z=zoom&x=..&y=.. (fractions of the scene) set the start view
+    view.s = q.has("z") ? +q.get("z") : Math.max(innerWidth / W, innerHeight / H) * 1.25;
+    const fx = q.has("x") ? +q.get("x") : 0.5, fy = q.has("y") ? +q.get("y") : 0.5;
+    view.ox = innerWidth / 2 - W * fx * view.s; view.oy = innerHeight / 2 - H * fy * view.s;
+  }
+  addEventListener("resize", resize);
+  cv.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const k = Math.exp(-e.deltaY * 0.0015), s2 = Math.min(3, Math.max(0.2, view.s * k)), r = s2 / view.s;
+    view.ox = e.clientX - (e.clientX - view.ox) * r; view.oy = e.clientY - (e.clientY - view.oy) * r; view.s = s2;
+  }, { passive: false });
+  let drag = null;
+  cv.addEventListener("pointerdown", (e) => { drag = [e.clientX, e.clientY, view.ox, view.oy]; cv.classList.add("drag"); cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", (e) => { if (drag) { view.ox = drag[2] + e.clientX - drag[0]; view.oy = drag[3] + e.clientY - drag[1]; } });
+  cv.addEventListener("pointerup", () => { drag = null; cv.classList.remove("drag"); });
+
+  let xray = true, showPeople = true, paused = false;
+  const tog = (id, f) => { const b = document.getElementById(id); b.onclick = () => { b.classList.toggle("on", f()); }; };
+  tog("bxray", () => (xray = !xray));
+  tog("bpeople", () => (showPeople = !showPeople));
+  document.getElementById("bpause").onclick = (e) => { paused = !paused; e.target.classList.toggle("on", paused); };
+
+  let last = performance.now(), fps = 60;
+  const nB = objs.filter((o) => o.kind === "b").length, types = new Set(objs.filter((o) => o.kind === "b").map((o) => o.type)).size;
+  function frame(t) {
+    const dt = Math.min(0.05, (t - last) / 1000); last = t; fps = fps * 0.95 + (1 / Math.max(dt, 1e-3)) * 0.05;
+    if (!paused) stepPeople(dt);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#1c1e21"; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(dpr * view.s, 0, 0, dpr * view.s, dpr * view.ox, dpr * view.oy);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(stat, 0, 0);
+    let hidden = 0;
+    if (showPeople) {
+      // only people on screen
+      const vx0 = -view.ox / view.s, vy0 = -view.oy / view.s, vx1 = vx0 + innerWidth / view.s, vy1 = vy0 + innerHeight / view.s;
+      const vis = people.filter((p) => { const [wx, wy] = personPos(p), x = SX(wx), y = SY(wy); return x > vx0 - 20 && x < vx1 + 20 && y > vy0 - 20 && y < vy1 + 40; });
+      vis.sort((a, b) => a.y - b.y);
+      for (const p of vis) {
+        drawPerson(ctx, p, false);
+        const [front, occ] = frontOf(p); p.occ = occ; hidden += occ;
+        if (!front.length) continue;
+        const [wx, wy] = personPos(p), x = SX(wx), y = SY(wy);
+        ctx.save(); ctx.beginPath(); ctx.rect(x - 0.6 * P, y - PH - 0.4 * P, 1.2 * P, PH + 0.7 * P); ctx.clip();
+        for (const o of front.sort((a, b) => a.z - b.z)) drawObj(ctx, o);
+        ctx.restore();
+      }
+      if (xray) for (const p of vis) if (p.occ) drawPerson(ctx, p, true);
+      info.textContent = `${SETS[SET] || SET} · зданий ${nB}, типов ${types} · людей на экране ${vis.length}, за домами и деревьями ${hidden} · ${fps.toFixed(0)} fps`;
+    }
+    requestAnimationFrame(frame);
+  }
+}
+</script>
+</body>
+</html>

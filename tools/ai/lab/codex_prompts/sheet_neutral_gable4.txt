@@ -1,0 +1,20 @@
+Generate exactly one image (use your image generation tool; no code, no files to edit).
+
+Image 1 = LAYOUT, CAMERA AND MASSING GUIDE ONLY. It is a game-asset turnaround sheet: a 4 x 2 grid of 8 views of ONE building (cells of equal size, wide 2:1 canvas). Each cell shows the same flat-shaded block model rendered with an ORTHOGRAPHIC camera pitched 55 degrees down, the building rotated to a different angle in each cell. The block is a 4-storey house, 16 m x 12.5 m footprint, GABLE roof with the ridge parallel to the long front facade; the facade with the dark brown door rectangle is the FRONT, all other facades have no door.
+
+Redraw every one of the 8 block models IN PLACE as the same finished building. Keep EXACTLY from Image 1:
+- the grid: 4 columns x 2 rows, every building centred in its own cell exactly where its block is; nothing crosses into a neighbouring cell;
+- the camera: orthographic, 55 degrees down, no perspective; the same steep view in every cell;
+- for every cell: the building's outline, rotation angle, position and size (all 8 at the same scale; do not move, crop, zoom or rotate any of them);
+- 4 storeys and the window rows/columns on every facade; the door only where Image 1 shows the brown door, and on no other facade.
+
+STEEP CAMERA, IMPORTANT: with this 55-degree top-down camera the roof is seen largely from above. Copy the exact proportion between roof and walls from Image 1 in every cell. In the bottom-left and bottom-centre-right cells (front and back views) the sloped roof face toward the viewer is a tall band that takes about 45% of the building's screen height; in the other two bottom cells the gable end shows a tall triangle plus the long roof slope. Do not shorten the roof, do not make the walls taller, do not add or remove storeys: exactly 4 window rows on every wall. Treat Image 1 as an underlay: every finished building must cover exactly the same pixels as its block.
+
+It must be EXACTLY THE SAME BUILDING in all 8 views: same wall colour, same roof colour, same window design, same door, same details, only seen from different sides.
+
+Image 2 = STYLE REFERENCE ONLY. Do not copy its building, proportions, camera angle or composition; copy only its material and rendering.
+Plasticine / claymation miniature style, exactly like Image 2: everything looks hand-sculpted from matte modelling clay, soft slightly rounded edges, subtle thumbprint and tool-mark texture, chunky simplified details, soft warm studio light from the upper left, gentle ambient occlusion. No outlines, no pixel art, no photorealism.
+
+Building: a 4-storey Moscow 19th-century town house, PALE CREAM plaster walls (light neutral colour, it will be recoloured later), white rusticated corners and cornice, white window surrounds with dark wooden frames, light grey standing-seam metal gable roof with one small chimney, a brown wooden double door with a small grey canopy on the front facade only.
+
+Output: a wide 2:1 image with the same layout as Image 1. Plain flat light grey background (#c3c3c3) everywhere, no ground, no cast shadows on the ground, no grid lines, no labels, no text.

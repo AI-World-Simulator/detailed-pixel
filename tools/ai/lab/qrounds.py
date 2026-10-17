@@ -209,3 +209,24 @@ QROUNDS["qp"] = [dict(name=f"qwen pitch {pt} @30", refs=[f"p30_iso_t_apt{pt}_col
     dict(name="st_basil steep view (prompt)", rgba=True, refs=["refs/st_basil.jpg"],
          prompt=ref_prompt("st_basil").replace(ISO, "a steep top-down game view, orthographic camera looking down at about 55 degrees, so the roofs and the ground around are clearly visible"))]
 COLS["qp"] = 3
+
+# ---- clay style (2026-10-17): Codex plasticine image as the style reference; image 1 = proxy keeps the composition ----
+CLAYQ = ("handmade plasticine claymation miniature: smooth matte modelling-clay walls, raised cream clay window surrounds, cornice and "
+         "corner quoins, dark glass windows with brown clay frames, a clay roof with raised standing seams, a small clay chimney, soft rounded "
+         "edges, subtle fingerprints, soft diffuse studio light, a stop-motion set miniature")
+def clay_prompt(desc, ref=True, n=None):
+    what = (f"Transform image 1, a turnaround sheet of {n} simple coloured blocks: replace every block with the same {desc}" if n else
+            f"Transform image 1: replace the simple coloured block with {desc}")
+    p = (f"{what}, keeping exactly the block's shape, footprint, roof form, orientation, camera angle, position and size, and its colours. "
+         f"The dark brown door marks the main entrance. Make it a {CLAYQ}. ")
+    if ref: p += ("Copy the material, modelling style, colours, window design and level of detail exactly from the clay house in image 2, "
+                  "but take the shape, size, number of floors and view angle only from image 1. ")
+    return p + ("Exactly the same building in every view. " if n else "") + "Plain light grey background, no text."
+MSKD = "a four-storey 19th-century Moscow townhouse (four rows of windows)"
+QROUNDS["qclay"] = [
+    dict(name="Q clay proxy+STYLE ref + CN .7", refs=["p30_iso_t_msk_colorn.png", "style_clay.png"], size="ref",
+         ctrl="p30_iso_t_msk_lines.png", s=0.7, prompt=clay_prompt(MSKD)),
+    dict(name="Q clay proxy, text only + CN .7", refs=["p30_iso_t_msk_colorn.png"], size="ref",
+         ctrl="p30_iso_t_msk_lines.png", s=0.7, prompt=clay_prompt(MSKD, ref=False)),
+]
+COLS["qclay"] = 2

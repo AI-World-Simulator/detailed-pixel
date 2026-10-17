@@ -1,0 +1,6 @@
+Generate exactly one image (use your image generation tool; no code, no files to edit).
+
+Image 1 = STYLE REFERENCE ONLY. Do not copy its building or composition; copy only its material and rendering: plasticine / claymation miniature, everything hand-sculpted from matte modelling clay, soft slightly rounded edges, subtle thumbprint and tool-mark texture, chunky simplified details, soft warm studio light from the upper left, gentle ambient occlusion. No outlines, no pixel art, no photorealism.
+
+Draw a SEAMLESS TILEABLE ground texture for a 2D game: old-town cobblestone pavement made of plasticine (rounded grey-beige clay cobbles with soft thumbprint texture and darker clay gaps), seen straight from above (top-down orthographic, no perspective, no horizon).
+Requirements: square image filled edge to edge; it must tile seamlessly when repeated in a grid (left edge continues the right edge, top edge continues the bottom edge, no cobble cut differently at opposite edges); evenly lit with no vignette, no directional gradient, no single dominant feature; uniform density; no border, no text.

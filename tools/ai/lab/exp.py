@@ -38,6 +38,54 @@ PROMPTS["p3_sheet"] = ("Turnaround sprite sheet of ONE building shown 13 times f
 PROMPTS["p3_sheet5"] = PROMPTS["p3_sheet"].replace("five-storey 19th-century European apartment house:",
     "tall five-storey 19th-century European apartment house with five rows of windows (ground floor plus four upper floors), small windows relative to the building:")
 PROMPTS["p3_sheet5_7"] = PROMPTS["p3_sheet5"].replace("shown 13 times", "shown 7 times")
+PROMPTS["p3_sheet5_7_top"] = PROMPTS["p3_sheet5_7"].replace("Classic 2:1 isometric game view, orthographic",
+    "Orthographic game view from high above, the camera tilted steeply down at about 55 degrees, roofs large and clearly visible")
+# style board (2026-10-17): one Moscow house, six renderings; the same texts go to Codex (scratchpad codex prompt)
+MSK = ("a four-storey 19th-century Moscow townhouse: warm ochre plaster facade with white window surrounds and a white cornice, "
+       "tall windows on four floors, a green painted sheet-metal hipped roof with a chimney, a wooden entrance door, a small shop sign on the ground floor")
+MSK_VIEW = (" Orthographic game view from high above, the camera tilted steeply down at about 55 degrees, the roof large and clearly visible. "
+            "Isolated single building on a plain flat light grey background, no ground, no trees, no people, no text.")
+STYLES = {
+    "st1_storybook": "Cozy hand-painted storybook game art of {b}. Painterly brush textures, soft warm sunlight from the left, gentle ambient occlusion, rich but clean details, readable silhouette.",
+    "st2_oil": "Expressive oil painting of {b}. Loose thick visible brushstrokes, muted moody palette, painterly concept art in the manner of Disco Elysium, soft light from the left.",
+    "st3_ink_wash": "Urban sketch of {b}: confident pen-and-ink linework with transparent watercolour washes, white paper texture showing through, light from the left.",
+    "st4_clean": "Clean stylized game art of {b}: simplified shapes, smooth soft gradients, crisp edges, soft global illumination, polished modern city-builder game look.",
+    "st5_gouache": "Gouache painting of {b} in the manner of classic Japanese hand-painted animated film backgrounds: soft warm light, rich saturated colours, lovingly painted details.",
+    "st6_semireal": "Detailed semi-realistic hand-painted strategy game asset of {b}: accurate plaster, metal and glass materials, light weathering, fine architectural detail, soft daylight from the left, in the manner of Anno 1800.",
+}
+for k, v in STYLES.items(): PROMPTS[k] = v.format(b=MSK) + MSK_VIEW
+# style board v3 (user: "different GAME styles, not shades of one"): nine clearly different looks
+GAME_STYLES = {
+    "g1_pixel": "Isometric pixel art game sprite of {b}. 16-bit era pixel art, crisp hard-edged square pixels, limited 32-colour palette, dithering, no anti-aliasing, classic SNES city-builder.",
+    "g2_toon": "Cartoon game art of {b}: bold black ink outlines, flat cel-shaded colours, playful slightly exaggerated proportions, comic-book look.",
+    "g3_cozy": "Cozy soft game art of {b}: rounded toy-like shapes, soft pastel colours, warm golden lamp-like light, gentle soft shadows, cute and heart-warming relaxing life-sim game.",
+    "g4_lowpoly": "Low-poly 3D game art of {b}: flat-shaded geometric facets, minimal clean shapes, a few solid colours per surface, no textures, elegant minimalist puzzle-game look.",
+    "g5_ligne": "Ligne claire illustration of {b}: clean thin uniform black line art, flat unshaded colour fills, sparse detail, in the manner of Moebius and the game Sable.",
+    "g6_oil": "Expressive oil painting of {b}: thick impasto brushstrokes, muted moody palette, painterly narrative-RPG concept art in the manner of Disco Elysium.",
+    "g7_clay": "Claymation miniature of {b}: handmade plasticine model with fingerprints and soft rounded edges, macro photo of a stop-motion set.",
+    "g8_anime": "Hand-painted background art of a classic Japanese animated film showing {b}: lush gouache, rich saturated colours, soft summer light, nostalgic.",
+    "g9_cgi90": "Late-1990s pre-rendered CGI game sprite of {b}: early 3D render look, crisp edges, slightly plastic materials, like SimCity 3000 or Fallout 2.",
+}
+for k, v in GAME_STYLES.items(): PROMPTS[k] = v.format(b=MSK) + MSK_VIEW
+# chosen style (2026-10-17): Codex "plasticine" (docs/art-style-clay.png); a prompt that describes that image as closely as possible
+CLAY = ("A handmade plasticine claymation miniature of {b}: smooth matte modelling-clay walls, raised cream clay window surrounds, "
+        "cornice and corner quoins, dark glass windows with brown clay frames, a clay roof with raised standing seams, a small clay chimney, "
+        "a clay wooden door with a small canopy. Soft rounded edges, subtle fingerprints and tool marks, soft diffuse studio light, "
+        "gentle soft shadows, a stop-motion set miniature.")
+BLK_DESC = {
+    "hip4": "a four-storey 19th-century Moscow townhouse with four rows of tall windows, pale cream walls, a grey painted sheet-metal hipped roof with a chimney",
+    "hip6": "a six-storey early-20th-century Moscow apartment house with six rows of tall windows, pale cream walls, a grey painted sheet-metal hipped roof with chimneys",
+    "gable4": "a four-storey 19th-century Moscow townhouse with four rows of tall windows, pale cream walls, a grey painted sheet-metal gabled roof with a chimney",
+    "gable6": "a six-storey early-20th-century Moscow apartment house with six rows of tall windows, pale cream walls, a grey painted sheet-metal gabled roof with chimneys",
+    "flat4": "a four-storey Moscow townhouse with four rows of tall windows, pale cream walls, a flat roof hidden behind a low parapet with a cornice",
+    "flat6": "a six-storey Moscow apartment house with six rows of tall windows, pale cream walls, a flat roof hidden behind a low parapet with a cornice",
+}
+for k, v in BLK_DESC.items():
+    PROMPTS["clay_sheet_" + k] = ("Turnaround sprite sheet of ONE building shown 8 times from different angles on a turntable. "
+        + CLAY.format(b=v) + " Exactly the same building in every view: identical windows, doors, chimneys and colours. "
+        "Orthographic game view from high above, the camera tilted steeply down at about 55 degrees, roofs large and clearly visible. "
+        "Evenly lit, no cast shadows. Plain light grey background, no text, no labels.")
+PROMPTS["clay_msk"] = CLAY.format(b="a four-storey 19th-century Moscow townhouse with ochre-yellow walls and a green hipped roof") + MSK_VIEW
 PROMPTS["p3_ortho"] = PROMPTS["p3"].replace("Three-quarter top-down view", "Orthographic game view from above")
 PROMPTS["p3_flat"] = PROMPTS["p3"].replace("hipped terracotta roof with chimneys and small dormers", "flat roof with a stone parapet, chimneys and a roof hatch")
 
@@ -183,6 +231,25 @@ ROUNDS = {
     "za": [dict(name="Z-Image recipe @30 (current p30_iso)", proxy="p30_iso", init="colorn", d=0.85, ctrl="lines", s=0.6, e=0.8, prompt="p3_iso")],
     "rp": [dict(name=f"pitch {pt} @{a}", proxy=f"p{a}_iso_t_apt{pt}", init="colorn", d=0.85, ctrl="lines", s=0.6, e=0.8, prompt="p3_ortho")
            for pt in (30, 45, 55, 60) for a in (0, 30)],
+    # style board: the Moscow house at 55 deg, six renderings (window lines .45 keep the floors at a steep camera)
+    "style": [dict(name=k, proxy="p30_iso_t_msk", init="colorn", d=0.85, ctrl="linesw", s=0.45, e=0.8, prompt=k) for k in STYLES],
+    # style board v2: no colour init (it pins the look to the proxy), only silhouette lines -> the style prompt has room
+    "style2": [dict(name=k, proxy="p30_iso_t_msk", ctrl="lines", s=0.7, e=0.65, prompt=k) for k in STYLES],
+    # style board v3: nine game styles, text-to-image + silhouette lines only (looser, so the style can show)
+    "style3": [dict(name=k, proxy="p30_iso_t_msk", ctrl="lines", s=0.6, e=0.5, prompt=k) for k in GAME_STYLES],
+    # clay style, local: how close can Z-Image get to the Codex plasticine image with the exact-geometry recipe
+    "clay": [dict(name="Z clay d.85 linesw .45", proxy="p30_iso_t_msk", init="colorn", d=0.85, ctrl="linesw", s=0.45, e=0.8, prompt="clay_msk"),
+             dict(name="Z clay d.85 linesw .35", proxy="p30_iso_t_msk", init="colorn", d=0.85, ctrl="linesw", s=0.35, e=0.8, prompt="clay_msk"),
+             dict(name="Z clay t2i lines .8", proxy="p30_iso_t_msk", ctrl="lines", s=0.8, e=0.7, prompt="clay_msk")],
+    # the block's six types in clay (R1 recipe at 55 deg)
+    "blk_clay": [dict(name=k, proxy=f"blk_{k}", init="colorn", d=0.85, ctrl="linesw", s=0.45, e=0.8, prompt="clay_sheet_" + k)
+                 for k in ("hip4", "hip6", "gable4", "gable6", "flat4", "flat6")],
+    # R1 turnaround sheet at the recommended 55 deg camera (all earlier sheets were 30 deg)
+    "r11": [
+        dict(name="sheet @55, recipe as is (iso prompt) s.35", proxy="sheet7t55", init="colorn", d=0.85, ctrl="linesw", s=0.35, e=0.8, prompt="p3_sheet5_7"),
+        dict(name="sheet @55, steep-camera prompt s.35", proxy="sheet7t55", init="colorn", d=0.85, ctrl="linesw", s=0.35, e=0.8, prompt="p3_sheet5_7_top"),
+        dict(name="sheet @55, steep-camera prompt s.45", proxy="sheet7t55", init="colorn", d=0.85, ctrl="linesw", s=0.45, e=0.8, prompt="p3_sheet5_7_top"),
+    ],
 }
 
 if __name__ == "__main__":

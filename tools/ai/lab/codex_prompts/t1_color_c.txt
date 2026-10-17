@@ -1,0 +1,14 @@
+Generate exactly one image (use your image generation tool; no code, no files to edit).
+
+Image 1 = CAMERA AND MASSING GUIDE ONLY. It is a flat-shaded block model of a building rendered with an ORTHOGRAPHIC game camera pitched 55 degrees down (steep top-down 3/4 view, no perspective, parallel edges stay parallel). Keep EXACTLY from Image 1:
+- the camera: orthographic, 55 degrees down, the same steep view where the roof takes a large part of the silhouette;
+- the building's outline, its position and its size in the frame (do not move, crop, zoom, rotate or rescale it);
+- the footprint proportions: long front facade about 22 m, side facade about 13 m; 4 storeys; hip roof;
+- the rows and columns of windows on both visible facades and the door position on the long front facade.
+
+Image 2 = STYLE REFERENCE ONLY. Do not copy its building, its proportions, its camera angle or its composition; copy only its material and rendering.
+Plasticine / claymation miniature style, exactly like Image 2: everything looks hand-sculpted from matte modelling clay, soft slightly rounded edges, subtle thumbprint and tool-mark texture, chunky simplified details, soft warm studio light from the upper left, gentle ambient occlusion. No outlines, no pixel art, no photorealism.
+
+Building to draw on top of the block model: a 4-storey 19th-century town house, ochre-yellow plaster walls, cream rusticated corners and cornice, cream window surrounds with dark wooden frames, green standing-seam metal hip roof with one small chimney, a brown wooden double door with a small green canopy in the middle of the long front facade.
+
+Output: a square image with EXACTLY the same framing as Image 1: treat Image 1 as an underlay and paint over it, so the finished building covers exactly the same pixels as the block model (same outline, same position, same size; the eaves, roof edge and base corners stay exactly where they are in Image 1; nothing bigger, nothing smaller). Plain flat light grey background (#c3c3c3), no ground plane, no cast shadow on the ground, no other objects, no text, no border.

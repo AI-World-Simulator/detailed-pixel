@@ -1,0 +1,7 @@
+Generate exactly one image (use your image generation tool; no code, no files to edit).
+
+Image 1 = STYLE REFERENCE ONLY. Do not copy its building or composition; copy only its material and rendering: plasticine / claymation miniature, everything hand-sculpted from matte modelling clay, soft slightly rounded edges, subtle thumbprint and tool-mark texture, chunky simplified details, soft warm studio light from the upper left, gentle ambient occlusion. No outlines, no pixel art, no photorealism.
+
+Draw one game character sprite as a claymation figurine: a young woman, about 1.7 m tall, realistic adult proportions slightly stylised (about 6 heads tall, not chibi), short dark-brown bob haircut, mustard-yellow knee-length coat, dark-green trousers, brown ankle boots, a small red backpack. She stands in a relaxed idle pose, facing the viewer and slightly to the right (three-quarter view), arms down.
+Camera: our game camera, orthographic, pitched 55 degrees down (we look at her from above, so we see the top of her head and shoulders and her body is foreshortened), the same camera that is used for the buildings of the game.
+Full body, centred, filling about 75% of the image height, nothing cropped. Plain flat light grey background (#c3c3c3), no ground, no cast shadow, no text.
