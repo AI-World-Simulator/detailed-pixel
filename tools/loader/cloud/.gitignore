@@ -1,0 +1,5 @@
+# cloud outputs and the call journal stay local (vendor terms; free-tier outputs may be public anyway)
+in/
+out/
+report/
+journal.jsonl
