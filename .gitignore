@@ -7,3 +7,6 @@ baked/
 !data/*.png
 .DS_Store
 kitsrc/
+__pycache__/
+tools/ai/lab/exp/
+tools/ai/lab/qexp/
