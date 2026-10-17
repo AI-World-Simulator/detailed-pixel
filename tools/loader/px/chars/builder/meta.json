@@ -18,6 +18,12 @@
   "walkA",
   "walkB",
   "squash",
+  "wave_blink",
+  "shovelUp_blink",
+  "shovelDown_blink",
+  "carry_blink",
+  "walkA_blink",
+  "walkB_blink",
   "squash_laugh"
  ]
 }

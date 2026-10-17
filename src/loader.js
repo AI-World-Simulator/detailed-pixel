@@ -88,14 +88,36 @@
   // standing life: blinks 2-5.5 s apart (first one early), ~15 % double, never triple; each character gets its own
   // loop length (7300 / 8900 / 10700 ms...) so nobody blinks in sync and the loop is hard to spot
   function idleLife(s, total, seed, base) {
-    var r = rng(seed), f = base || "idle", out = [], t = 0, gap = 600 + r() * 2400;
+    var r = rng(seed), f = base || "idle", bl = blinkOf(s, f) || f, out = [], t = 0, gap = 600 + r() * 2400;
     while (t + gap + 140 + 400 < total) {
-      out.push([f, gap | 0], ["blink", 140]); t += (gap | 0) + 140;
-      if (r() < 0.15 && t + 500 < total) { var g = 160 + r() * 80 | 0; out.push([f, g], ["blink", 120]); t += g + 120; }
+      out.push([f, gap | 0], [bl, 140]); t += (gap | 0) + 140;
+      if (r() < 0.15 && t + 500 < total) { var g = 160 + r() * 80 | 0; out.push([f, g], [bl, 120]); t += g + 120; }
       gap = 2000 + r() * 3500;
     }
     frames(s, pad(out, total, f));
   }
+  // blinking twin of a frame (sprites carry <frame>_blink for every pose: the blink eyes moved with the pose's head)
+  function blinkOf(s, f) {
+    var b = f === "idle" ? "blink" : f + "_blink";
+    return s && s.c.frames && s.c.frames.indexOf(b) >= 0 ? b : null;
+  }
+  // insert blinks into a whole track every 2-5.5 s (seeded): long holds blink for 130 ms inside, short frames
+  // (walk cycle) are swapped for their twin as a whole
+  function withBlinks(s, segs, seed) {
+    var r = rng(seed), out = [], t = 0, next = 800 + r() * 2200;
+    segs.forEach(function (g) {
+      var f = g[0], d = g[1], b = blinkOf(s, f);
+      if (b && t + d > next) {
+        if (d >= 260) { var at = Math.max(60, Math.min(d - 190, (next - t) | 0)); out.push([f, at], [b, 130], [f, d - at - 130]); next = t + at + 2000 + r() * 3500; }
+        else { out.push([b, d]); next = t + 2000 + r() * 3500; }
+      } else out.push(g);
+      t += d;
+    });
+    return out;
+  }
+  function repeat(seq, n) { var all = []; for (var i = 0; i < n; i++) all = all.concat(seq); return all; }
+  function work(s, seq, reps, seed) { frames(s, withBlinks(s, repeat(seq, reps), seed)); }   // a work loop that blinks
+
   // a hop: anticipation squash, launch, held apex, fall, landing squash (heights in art px); frame f in the air
   function hop(f) {                          // the squash keeps the expression of the airborne frame (squash_laugh)
     var q = f === "laugh" ? "squash_laugh" : "squash";
@@ -230,24 +252,24 @@
       var PAVE = [["idle", 300], ["crouch", 650], ["idle", 520], ["idle", 260], ["crouch", 700], ["idle", 480]];
       switch (key) {
         case "coast": case "smooth":
-          frames(Wm, PAINT); idleLife(Bd, 8900, 11); idleLife(By, 10700, 12); still(By);
+          work(Wm, PAINT, 3, 41); idleLife(Bd, 8900, 11); idleLife(By, 10700, 12); still(By);
           if (!done.coast) { done.coast = 1; sc.classList.add("st-coast"); }
           break;
         case "relief":
-          frames(Bd, DIG); frames(Wm, timeline(7300, "idle", [[200, [["wave", 380], ["idle", 300], ["wave", 380]]], [2600, [["blink", 140]]], [5900, [["blink", 140]]]]));
+          work(Bd, DIG, 3, 42); frames(Wm, timeline(7300, "idle", [[200, [["wave", 380], ["idle", 300], ["wave", 380]]], [2600, [["blink", 140]]], [5900, [["blink", 140]]]]));
           idleLife(By, 10700, 13); still(By);
           if (dirt) dirt.el.style.opacity = 1;
           if (!done.relief) { done.relief = 1; sc.classList.add("st-relief"); }
           break;
         case "roads":
-          frames(By, PAVE); still(By); idleLife(Wm, 7300, 14); frames(Bd, DIG);
+          work(By, PAVE, 3, 43); still(By); idleLife(Wm, 7300, 14); work(Bd, DIG, 3, 44);
           if (stones) stones.el.style.opacity = 1;
           if (dirt) dirt.el.style.opacity = 0;
           if (!done.roads) { done.roads = 1; sc.classList.add("st-roads"); }
           break;
         case "kit": case "workers":
           if (crate) crate.el.style.opacity = 1;
-          frames(Bd, timeline(8900, "carry", [[2100, [["idle", 500], ["blink", 140], ["idle", 900]]], [6400, [["idle", 400], ["blink", 140], ["idle", 600]]]]));
+          frames(Bd, timeline(8900, "carry", [[1300, [["carry_blink", 130]]], [2100, [["idle", 500], ["blink", 140], ["idle", 900]]], [4700, [["carry_blink", 130]]], [6400, [["idle", 400], ["blink", 140], ["idle", 600]]]]));
           cheer(By, [380, 620, 450]);
           frames(Wm, timeline(7300, "idle", [[300, talk(1600, 1)], [2600, [["blink", 140]]], [4100, talk(1400, 4)], [6200, [["blink", 140]]]]));
           sc.classList.add("st-kit");
@@ -260,7 +282,7 @@
           cheer(By, [300, 520, 380, 700]);
           break;
         default:                                // unknown step (e.g. a backend fetch): everyone busy
-          frames(Wm, PAINT); frames(Bd, DIG); frames(By, PAVE); still(By);
+          work(Wm, PAINT, 3, 45); work(Bd, DIG, 3, 46); work(By, PAVE, 3, 47); still(By);
       }
     }
     job("coast");
@@ -270,33 +292,39 @@
   // one resident walks across the world: sea, hills, mountains, roads, then the city
   V.walk = function (sc) {
     var BIOME = { coast: "sea", smooth: "sea", relief: "mount", roads: "road", kit: "hills", workers: "hills", people: "city" };
+    // near scenery moves with the ground (30 px/s); far scenery (mountains, hills, lighthouse, mills) at half speed and one
+    // line further back: parallax gives depth for free
     var SETS = {
-      sea: [["s_lighthouse", 10], ["s_boat", 70], ["s_mill", 120]],
-      hills: [["s_hill", 0], ["oak", 64], ["s_pine", 96], ["birch", 140]],
-      mount: [["s_mountain", 0], ["s_pine", 64], ["s_mountain", 96], ["s_pine", 152]],
-      road: [["sign", 8], ["cone", 56], ["lamp", 90], ["hydrant", 132]],
-      city: [["s_house", 0], ["s_tower", 44], ["lamp", 86], ["s_house", 104], ["mailbox", 150]]
+      sea: { far: [["s_lighthouse", 14], ["s_mill", 104]], near: [["s_boat", 60], ["birch", 150]] },
+      hills: { far: [["s_hill", 0], ["s_hill", 96]], near: [["oak", 58], ["s_pine", 112], ["birch", 148]] },
+      mount: { far: [["s_mountain", 4], ["s_mountain", 92]], near: [["s_pine", 60], ["s_pine", 150]] },
+      road: { far: [["s_mill2", 120]], near: [["sign", 8], ["cone", 56], ["lamp", 90], ["hydrant", 140]] },
+      city: { far: [["s_tower", 40], ["s_tower", 128]], near: [["s_house", 0], ["lamp", 86], ["s_house2", 104], ["mailbox", 152]] }
     };
     var L = 168, belts = {};
     stars(sc, 8, 14);
     var sky = el("div", "lclip sky", sc);
     if (has("s_cloud")) { sprite(sky, "s_cloud", 30, 46).el.classList.add("ldrift"); sprite(sky, "s_cloud", 120, 54).el.classList.add("ldrift", "slow"); }
     Object.keys(SETS).forEach(function (k) {
-      var b = el("div", "lbelt", sc);
-      [0, L].forEach(function (off) { SETS[k].forEach(function (p) { if (has(p[0])) sprite(b, p[0], p[1] + off, 0); }); });
-      belts[k] = b;
+      var pair = [];
+      ["far", "near"].forEach(function (depth) {
+        var b = el("div", "lbelt " + depth, sc);
+        [0, L].forEach(function (off) { SETS[k][depth].forEach(function (p) { if (has(p[0])) sprite(b, p[0], p[1] + off, depth === "far" ? 2 : 0); }); });
+        pair.push(b);
+      });
+      belts[k] = pair;
     });
     el("div", "lgnd walk scroll", sc);
     var who = has("boy") ? "boy" : "woman";
     var P = sprite(sc, who, 76, 5, who === "boy");   // walk to the right: the boy is drawn facing left
     if (!P) return V.dots(sc);
     // 30 art px/s ground (33.3 ms per px = 2 frames at 60 Hz) and 170 ms frames: 10.2 px per step = the boy's stride
-    frames(P, [["walkA", 170], ["idle", 170], ["walkB", 170], ["idle", 170]]);
+    frames(P, withBlinks(P, repeat([["walkA", 170], ["idle", 170], ["walkB", 170], ["idle", 170]], 12), 51));
     motion(P, [[[0, 0], 170], [[0, 1], 170], [[0, 0], 170], [[0, 1], 170]]);
     var ORDER = ["sea", "mount", "road", "hills", "city"];
     function stage(key, i, n) {             // unknown steps (a backend boot): scenery follows the progress fraction
       var cur = BIOME[key] || (n ? ORDER[Math.min(ORDER.length - 1, Math.floor((i + 1) / n * ORDER.length - 1e-9))] : "hills");
-      Object.keys(belts).forEach(function (k) { belts[k].classList.toggle("on", k === cur); });
+      Object.keys(belts).forEach(function (k) { belts[k].forEach(function (b) { b.classList.toggle("on", k === cur); }); });
     }
     stage("coast");
     return { stage: stage };
@@ -319,7 +347,7 @@
       var lane = el("div", "lwalker", sc, "--d:" + w[2] + "s;--rx:" + (100 + k * 26));
       var s = sprite(lane, w[0], 0, 5, w[1]);
       var ms = Math.round(STRIDE[w[0]] / (2 * SPEED) * 1000);             // two frames per step
-      frames(s, [["walkA", ms], ["idle", ms], ["walkB", ms], ["idle", ms]]);
+      frames(s, withBlinks(s, repeat([["walkA", ms], ["idle", ms], ["walkB", ms], ["idle", ms]], 10), 60 + k));
       motion(s, [[[0, 0], ms], [[0, 1], ms], [[0, 0], ms], [[0, 1], ms]]);
       n++;
     });

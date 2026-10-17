@@ -22,7 +22,8 @@
         - pose frames get the base head pasted (rises at most 1 px; objects in front of the face are kept);
           "local": "eyes" | "mouth" | true takes only that changed part of the face from the edit;
         - missing outer outline closed, lone pixels dropped; a "squash" frame is derived from idle (one shin row out),
-          "squash_from": ["laugh"] adds squash_<frame> keeping that expression;
+          "squash_from": ["laugh"] adds squash_<frame> keeping that expression; every pose frame gets a blinking
+          twin <frame>_blink (the blink frame's eyes moved by the pose's head offset; "blink_poses": false to skip);
         - qa.json per frame: contact (0 = on the ground), face_diff, area, outline share, lonely pixels, offsets.
       "kind": "terrain" (e.g. the island layers) keeps the older colour-registration path; "base_mask"/"match_colors"
       apply there; "mask": "m.png" (BiRefNet, cgen kind "bgmask") is joined with the colour-based foreground.
@@ -548,6 +549,42 @@ def outline_fix(rgb, a, ink):
     return rgb, a
 
 
+def synth_blink(qbase, abase, neck):
+    """Closed eyes from the base face: every eye (a small dark blob inside the face, taller than 1 cell) keeps only its
+    bottom row; the cells above take the skin colour found just under the eye. For renders whose thin closed-eye line
+    was thinner than a cell and vanished in the downscale. Returns (rgb, number of eyes found)."""
+    head = abase.copy(); head[neck:] = False
+    core = head & nd.binary_erosion(abase, iterations=1)
+    lab, n = nd.label(core & (lum(qbase) < 50))
+    rgb, eyes = qbase.copy(), 0
+    for k in range(1, n + 1):
+        ys, xs = np.where(lab == k)
+        if not (2 <= len(ys) <= 12 and ys.max() - ys.min() >= 1 and xs.max() - xs.min() <= 3):
+            continue
+        y1 = ys.max(); below = qbase[min(y1 + 1, qbase.shape[0] - 1), int(np.median(xs))]
+        if lum(below) < 50:
+            continue
+        top = ys < y1
+        rgb[ys[top], xs[top]] = below
+        eyes += 1
+    return rgb, eyes
+
+
+def eyes_onto(rgb, a, brgb, qbase, abase, neck, off):
+    """Blink overlay (Stardew-style): the cells where the blink face differs from the base face, moved by the head offset
+    of a pose frame; a foreign object in front of the face stays in front."""
+    head = abase.copy(); head[neck:] = False
+    diff = head & (np.abs(brgb.astype(int) - qbase.astype(int)).sum(axis=2) > 0)
+    hy, hx = np.where(diff); ty, tx = hy + off[0], hx + off[1]
+    H, W = a.shape
+    ok = (ty >= 0) & (ty < H) & (tx >= 0) & (tx < W)
+    hy, hx, ty, tx = hy[ok], hx[ok], ty[ok], tx[ok]
+    head_keys = np.unique(ckey(qbase[head]))
+    front = a[ty, tx] & ~np.isin(ckey(rgb[ty, tx]), head_keys) & (lum(rgb[ty, tx]) >= 40)
+    rgb = rgb.copy(); rgb[ty[~front], tx[~front]] = brgb[hy[~front], hx[~front]]
+    return rgb
+
+
 def despeck(rgb, a):
     """Drop opaque cells with no opaque 4-neighbour."""
     k = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
@@ -647,6 +684,15 @@ def cmd_char_person(spec, spec_path, outdir):
                       ground_shift=int(dyg), head_offset=list(hd), head_mismatch=round(mis, 3))
     out["squash"] = squash_of(qbase, abase, base_contact)
     qa["squash"] = dict(qa_frame(*out["squash"], qbase, abase, keys, base_contact, neck, off=(1, 0)), note="derived from idle")
+    if "blink" in out and int((np.abs(out["blink"][0].astype(int) - qbase.astype(int)).sum(axis=2) > 0).sum()) < 12:
+        sb, ne = synth_blink(qbase, abase, neck)            # the edit's closed-eye line was lost in the downscale
+        if ne >= 2:
+            out["blink"] = (sb, abase.copy())
+            qa["blink"]["note"] = f"synthesised from the base eyes ({ne})"
+    if "blink" in out and spec.get("blink_poses", True):   # every pose frame gets a blinking twin <frame>_blink
+        for fn in [k for k in list(out) if k not in ("idle", "blink", "talk", "laugh", "squash") and not raw[k][2].get("local")]:
+            off = tuple(qa[fn]["head_offset"])
+            out[fn + "_blink"] = (eyes_onto(out[fn][0], out[fn][1], out["blink"][0], qbase, abase, neck, off), out[fn][1])
     for fn in spec.get("squash_from", []):           # squash keeping an expression (a laughing hop must not blink open-eyed)
         if fn in out:
             out["squash_" + fn] = squash_of(*out[fn], base_contact)

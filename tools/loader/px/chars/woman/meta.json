@@ -17,6 +17,11 @@
   "walkA",
   "walkB",
   "squash",
+  "wave_blink",
+  "paint1_blink",
+  "paint2_blink",
+  "walkA_blink",
+  "walkB_blink",
   "squash_laugh"
  ]
 }
