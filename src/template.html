@@ -79,14 +79,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .cbtns button[aria-pressed="true"] { background: var(--gold); color: #2a1a02; }
 #cClose { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
 
-#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink); z-index: 10; }
-.ld { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 0 16px; text-align: center; }
-.ld .logo { font-family: var(--display); font-size: clamp(14px, 3vw, 22px); letter-spacing: 0.12em; text-shadow: 3px 3px 0 #050b14; }
-#loadMsg { color: var(--muted); font-size: 16px; }
-.ld .dots { display: flex; gap: 6px; }
-.ld .dots i { width: 10px; height: 10px; background: var(--gold); animation: blink 1s steps(2) infinite; }
-.ld .dots i:nth-child(2) { animation-delay: 0.2s; } .ld .dots i:nth-child(3) { animation-delay: 0.4s; }
-@keyframes blink { 50% { opacity: 0.2; } }
+/*LOADER_CSS*/
 .hint { position: absolute; left: 50%; top: calc(58px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); font-size: 13px; color: var(--muted); padding: 6px 12px; pointer-events: none; white-space: nowrap; }
 
 @media (max-width: 720px) {
@@ -99,7 +92,6 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   .hint { display: none; }
   .ghost { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .ld .dots i { animation: none; } }
 </style>
 
 <div id="app">
@@ -158,7 +150,8 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     </div>
   </aside>
 
-  <div id="loading"><div class="ld"><div class="logo">ДЕТАЛЬНЫЙ ПИКСЕЛЬ</div><div class="dots"><i></i><i></i><i></i></div><div id="loadMsg">Загружаем планету…</div></div></div>
+  <div id="loading" aria-busy="true"><div class="ldr-box"><div class="logo">ДЕТАЛЬНЫЙ ПИКСЕЛЬ</div><div class="ldr-stage" aria-hidden="true"></div><div id="loadMsg" role="status" aria-live="polite">Загружаем планету…</div><div class="ldr-bar" role="progressbar" aria-label="Загрузка мира" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div></div>
+  <script>/*LOADER_JS*/</script>
 </div>
 
 <script type="application/json" id="land">/*LAND*/</script>

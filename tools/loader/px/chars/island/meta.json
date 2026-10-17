@@ -1,0 +1,16 @@
+{
+ "name": "island",
+ "w": 99,
+ "h": 63,
+ "feet": 60,
+ "cx": 49,
+ "period": 9.6,
+ "frames": [
+  "idle",
+  "roads",
+  "relief",
+  "smooth",
+  "coast",
+  "sea"
+ ]
+}

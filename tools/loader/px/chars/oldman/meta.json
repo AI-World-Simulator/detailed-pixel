@@ -1,0 +1,16 @@
+{
+ "name": "oldman",
+ "w": 38,
+ "h": 45,
+ "feet": 43,
+ "cx": 24,
+ "period": 12.28,
+ "frames": [
+  "idle",
+  "blink",
+  "talk",
+  "laugh",
+  "read",
+  "point"
+ ]
+}

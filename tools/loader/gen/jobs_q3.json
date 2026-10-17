@@ -1,0 +1,47 @@
+[
+ {
+  "name": "q_island_roads",
+  "kind": "qedit",
+  "images": [
+   "out/z_island_b.png"
+  ],
+  "seed": 300,
+  "prompt": "Edit <image1>: remove all the houses and the church from the island and fill their places with green meadow that matches the surrounding grass. Keep everything else exactly identical: the same chunky pixel art style and outlines, the same island shape and size, the same position on the canvas, the same sea square, the same plain light grey background."
+ },
+ {
+  "name": "q_island_relief",
+  "kind": "qedit",
+  "images": [
+   "out/q_island_roads.png"
+  ],
+  "seed": 301,
+  "prompt": "Edit <image1>: remove the grey road from the island and fill it with green meadow that matches the surrounding grass. Keep everything else exactly identical: the same chunky pixel art style and outlines, the same island shape and size, the same position on the canvas, the same sea square, the same plain light grey background."
+ },
+ {
+  "name": "q_island_smooth",
+  "kind": "qedit",
+  "images": [
+   "out/q_island_relief.png"
+  ],
+  "seed": 302,
+  "prompt": "Edit <image1>: remove the snowy mountain and the pine forest and replace them with flat green meadow that matches the surrounding grass. Keep everything else exactly identical: the same chunky pixel art style and outlines, the same island shape and size, the same position on the canvas, the same sea square, the same plain light grey background."
+ },
+ {
+  "name": "q_island_coast",
+  "kind": "qedit",
+  "images": [
+   "out/q_island_smooth.png"
+  ],
+  "seed": 303,
+  "prompt": "Edit <image1>: turn all the green meadow into sand, so the island becomes one flat sandy beach with the same outline. Keep everything else exactly identical: the same chunky pixel art style and outlines, the same island shape and size, the same position on the canvas, the same sea square, the same plain light grey background."
+ },
+ {
+  "name": "q_island_sea",
+  "kind": "qedit",
+  "images": [
+   "out/q_island_coast.png"
+  ],
+  "seed": 304,
+  "prompt": "Edit <image1>: remove the sandy island completely so that only the flat blue sea square remains, with gentle pixel waves. Keep everything else exactly identical: the same chunky pixel art style and outlines, the same island shape and size, the same position on the canvas, the same sea square, the same plain light grey background."
+ }
+]

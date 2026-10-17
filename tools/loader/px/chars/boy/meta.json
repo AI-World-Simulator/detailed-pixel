@@ -1,0 +1,19 @@
+{
+ "name": "boy",
+ "w": 37,
+ "h": 47,
+ "feet": 43,
+ "cx": 19,
+ "period": 12.28,
+ "frames": [
+  "idle",
+  "blink",
+  "talk",
+  "laugh",
+  "jump",
+  "crouch",
+  "wave",
+  "walkA",
+  "walkB"
+ ]
+}

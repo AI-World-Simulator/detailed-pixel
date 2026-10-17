@@ -1,0 +1,20 @@
+{
+ "name": "builder",
+ "w": 50,
+ "h": 51,
+ "feet": 46,
+ "cx": 19,
+ "period": 12.28,
+ "frames": [
+  "idle",
+  "blink",
+  "talk",
+  "laugh",
+  "wave",
+  "shovelUp",
+  "shovelDown",
+  "carry",
+  "walkA",
+  "walkB"
+ ]
+}

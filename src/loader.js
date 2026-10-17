@@ -1,0 +1,347 @@
+/* Boot loader: little pixel residents doing things while the world loads.
+   Every moving part is a CSS animation of transform/opacity (compositor-only), built once per stage change,
+   so the scene keeps moving while boot() blocks the main thread. Sprites: data/loader/sprites.json, inlined by build.js.
+     LOADER.stage(key, text, i, n)  boot() step: key in STAGES (unknown keys get a generic busy scene)
+     LOADER.done()                  fade out and remove the overlay
+     LOADER.scene(root, variant)    build a scene into any element (demo page)
+   Variant: ?loader=crew|chat|walk|parade|island|dots, default DEFAULT. Reduced motion: frames hold, only opacity pulses. */
+(function () {
+  "use strict";
+  var SPR = /*LOADER_SPR*/null;
+  var DEFAULT = "crew";
+  var STAGES = ["coast", "smooth", "relief", "roads", "kit", "workers", "people"];
+  var W = 168, H = 72;                       // scene size in art pixels; CSS scales by an integer --s
+
+  var uid = 0, sheet = null;
+  function css(rule) {
+    if (!sheet) { var st = document.createElement("style"); st.id = "ldr-kf"; document.head.appendChild(st); sheet = st.sheet; }
+    try { sheet.insertRule(rule, sheet.cssRules.length); } catch (e) { /* bad rule: skip, never break boot */ }
+  }
+  function el(tag, cls, parent, style) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (style) e.style.cssText = style;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  // segs [[value, ms], ...] -> keyframes that hold each value (played with step-end); total = sum of ms
+  function track(segs, decl) {
+    var total = 0, i, f = [];
+    for (i = 0; i < segs.length; i++) total += segs[i][1];
+    var t = 0;
+    for (i = 0; i < segs.length; i++) { f.push((t / total * 100).toFixed(3) + "%{" + decl(segs[i][0]) + "}"); t += segs[i][1]; }
+    f.push("100%{" + decl(segs[segs.length - 1][0]) + "}");
+    var name = "lk" + (uid++).toString(36);
+    css("@keyframes " + name + "{" + f.join("") + "}");
+    return name + " " + total + "ms step-end";
+  }
+  function play(e, anims, count) {
+    e.style.animation = anims.map(function (a) { return a + " " + (count || "infinite") + (count ? " forwards" : ""); }).join(",");
+  }
+  var px = function (n) { return "calc(var(--s) * " + n + "px)"; };
+
+  /* ---------- sprites ---------- */
+  // props: (x, y) = bottom-left corner; characters: x = body centre, y = the line the feet stand on
+  // (a character's canvas is the union of all its frames, e.g. a raised shovel widens it to one side)
+  function sprite(scene, name, x, y, flip) {
+    var c = SPR.chars[name] || SPR.props[name];
+    if (!c) return null;
+    var n = c.frames ? c.frames.length : 1;
+    if (c.feet != null) y -= c.h - 1 - c.feet;
+    if (c.cx != null) x -= flip ? c.w - 1 - c.cx : c.cx;
+    var a = el("div", "la", scene, "--x:" + x + ";--y:" + y + ";--w:" + c.w + ";--h:" + c.h);
+    var win = el("div", "lp" + (flip ? " flip" : ""), a);
+    var strip = el("i", "", win, "--n:" + n + ";background-image:url(" + c.src + ")");
+    return { el: a, strip: strip, c: c, x: x, y: y, n: n };
+  }
+  function frames(s, segs, count) {          // segs [[frameName, ms]]
+    if (!s) return;
+    var idx = segs.map(function (g) { var k = s.c.frames ? s.c.frames.indexOf(g[0]) : 0; return [k < 0 ? 0 : k, g[1]]; });
+    play(s.strip, [track(idx, function (k) { return "transform:translateX(" + (-k / s.n * 100).toFixed(4) + "%)"; })], count);
+  }
+  function motion(s, segs, count) {          // segs [[[dx, dy], ms]] in art px, dy up
+    if (!s) return;
+    s.el.classList.add("lmv");
+    play(s.el, [track(segs, function (v) { return "transform:translate(" + px(v[0]) + "," + px(-v[1]) + ")"; })], count);
+  }
+  function fade(e, segs, count) {            // segs [[0|1, ms]]
+    play(e, [track(segs, function (v) { return "opacity:" + v; })], count);
+  }
+  function has(name) { return !!(SPR.chars[name] || SPR.props[name]); }
+  // talking: alternating mouth frames with uneven, deterministic lengths
+  var TALK = [130, 170, 110, 190, 140, 120, 180, 150];
+  function talk(ms, seed, a, b) {
+    var out = [], t = 0, k = seed || 0;
+    while (t < ms) { var d = Math.min(TALK[k % TALK.length], ms - t); out.push([k % 2 ? (b || "idle") : (a || "talk"), d]); t += d; k++; }
+    return out;
+  }
+  function pad(segs, total, f) {            // fill a track up to `total` ms with frame f
+    var t = 0; segs.forEach(function (g) { t += g[1]; });
+    if (t < total) segs.push([f, total - t]);
+    return segs;
+  }
+  function loop(a, b, ms, total) {           // a/b alternation, e.g. digging
+    if (!(ms > 0) || !(total > 0)) return [[a, Math.max(1, total || 1)]];
+    var out = [], t = 0, k = 0;
+    while (t < total) { out.push([k % 2 ? b : a, Math.min(ms, total - t)]); t += ms; k++; }
+    return out;
+  }
+  function idleBlink(s, total, at) {         // stand, blink once at `at` ms
+    frames(s, pad([["idle", at], ["blink", 140]], total, "idle"));
+  }
+
+  /* ---------- scene pieces ---------- */
+  function bubble(scene, x, y, w, h, flip) {
+    return el("div", "lb" + (flip ? " flip" : ""), scene, "--x:" + x + ";--y:" + y + ";--w:" + w + ";--h:" + h);
+  }
+  function iconIn(b, name, bw, bh) {
+    var c = SPR.props[name]; if (!c) return null;
+    var s = sprite(b, name, Math.floor((bw - c.w) / 2), Math.floor((bh - c.h) / 2));
+    return s;
+  }
+  function ground(scene, kind) { return el("div", "lgnd " + kind, scene); }
+  // twinkling 1-px stars in the upper part of the scene (deterministic positions, uneven periods)
+  function stars(scene, n, top) {
+    for (var k = 0; k < n; k++) {
+      var x = (k * 53 + 17) % W, y = H - 2 - ((k * 29 + 7) % (top || 18));
+      var st = el("i", "lstar", scene, "--x:" + x + ";--y:" + y);
+      fade(st, [[1, 900 + (k * 370) % 1700], [0.25, 260], [1, 400 + (k * 130) % 600], [0.25, 180]]);
+    }
+  }
+
+  /* ---------- variants ---------- */
+  var V = {};
+
+  // two neighbours chatting under a street lamp: icons in speech bubbles, laughs, blinks (14 s loop)
+  V.chat = function (sc) {
+    stars(sc, 9);
+    ground(sc, "walk");
+    if (has("lamp")) sprite(sc, "lamp", 6, 5);
+    if (has("bush")) sprite(sc, "bush", 140, 5);
+    if (has("flowers")) sprite(sc, "flowers", 126, 5);
+    if (has("bench")) sprite(sc, "bench", 66, 5);
+    var A = sprite(sc, "woman", 52, 5), B = sprite(sc, "builder", 110, 5, true);
+    if (!A || !B) return V.dots(sc);
+    var T = 14000;
+    frames(A, pad([].concat(talk(2800, 0), [["idle", 1200], ["blink", 140], ["idle", 1660], ["laugh", 1400], ["idle", 200]],
+      talk(2600, 3), [["idle", 1400], ["blink", 140]]), T, "idle"));
+    frames(B, pad([["idle", 1500], ["blink", 140], ["idle", 1360], ["wave", 700]].concat(talk(2100, 2),
+      [["laugh", 1400], ["idle", 700], ["blink", 140], ["idle", 1960]], talk(2600, 5)), T, "idle"));
+    motion(A, pad([[[0, 0], 5800], [[0, 2], 200], [[0, 0], 250], [[0, 2], 200], [[0, 0], 250], [[0, 1], 200]], T, [0, 0]));
+    motion(B, pad([[[0, 0], 5950], [[0, 2], 200], [[0, 0], 250], [[0, 2], 200], [[0, 0], 250]], T, [0, 0]));
+    // bubbles: A talks 0-2.8 s and 7.4-10 s, B 3-5.8 s and 10-12.6 s; two icons per turn
+    var bw = 22, bh = 20;
+    var bA = bubble(sc, 52 + 6, 5 + 44, bw, bh), bB = bubble(sc, 110 - bw - 6, 5 + 44, bw, bh, true);   // above the heads (~43 px tall)
+    fade(bA, [[1, 2800], [0, 4600], [1, 2600], [0, 4000]]);
+    fade(bB, [[0, 3000], [1, 2800], [0, 4200], [1, 2600], [0, 1400]]);
+    var icA = [["house", 0, 1400], ["coin", 1400, 1400], ["coffee", 7400, 1300], ["fish", 8700, 1300]];
+    var icB = [["tree", 3000, 1400], ["heart", 4400, 1400], ["star", 10000, 1300], ["train", 11300, 1300]];
+    [[bA, icA], [bB, icB]].forEach(function (p) {
+      p[1].forEach(function (ic) {
+        var s = iconIn(p[0], ic[0], bw, bh); if (!s) return;
+        var segs = []; if (ic[1]) segs.push([0, ic[1]]); segs.push([1, ic[2]]); if (ic[1] + ic[2] < T) segs.push([0, T - ic[1] - ic[2]]);
+        fade(s.el, segs);
+      });
+    });
+    return {};
+  };
+
+  // a work crew builds the world: each boot step gets its own job, finished jobs stay on screen
+  V.crew = function (sc) {
+    stars(sc, 7, 14);
+    var land = el("div", "lland", sc);
+    el("div", "lcover", sc);   // the sea; slides away when the coast is drawn
+    var mnt = el("div", "lclip mnt", sc), road = el("div", "lroad", sc), town = el("div", "lclip town", sc);
+    // the crew stands at the edges facing the middle; the world they build fills the middle (x 32..104)
+    var M = [];
+    [["s_hill", 56], ["s_mountain", 34], ["s_mountain", 76], ["s_pine", 96]].forEach(function (m) { if (has(m[0])) M.push(sprite(mnt, m[0], m[1], 0)); });
+    var tiles = [];
+    for (var i = 0; i < 14; i++) tiles.push(el("i", "", road, "--i:" + i));
+    var houses = [];
+    [["s_house", 36], ["s_tower", 58], ["s_house2", 80]].forEach(function (h) { if (has(h[0])) houses.push(sprite(town, h[0], h[1], 0)); });
+    var crate = has("crate") ? sprite(sc, "crate", 58, 9) : null;
+    var pops = ["house", "tree", "coin", "star"].filter(has).map(function (n, k) {
+      var s = sprite(sc, n, 62 + (k % 2) * 4, 22); s.el.classList.add("lpop"); s.el.style.setProperty("--d", k * 400 + "ms"); return s;
+    });
+    var Wm = sprite(sc, "woman", 16, 9), Bd = sprite(sc, "builder", 118, 9, true), By = sprite(sc, "boy", 152, 9);   // the boy is drawn facing left
+    var dirt = has("dirt") ? sprite(sc, "dirt", 84, 9) : null, stones = null;   // the dirt pile sits where the flipped builder digs
+    if (!Wm || !Bd || !By) return V.dots(sc);
+    [dirt, stones, crate].forEach(function (s) { if (s) s.el.style.opacity = 0; });
+    var done = {};
+    var BY_PROGRESS = [[0.15, "coast"], [0.35, "relief"], [0.55, "roads"], [0.75, "kit"], [0.95, "people"]];
+    function job(key, i, n) {
+      var T = 2400;
+      if (STAGES.indexOf(key) < 0 && n) {    // unknown step (a backend boot): play the job matching the progress fraction
+        var f = (i + 1) / n, pick = "coast";
+        BY_PROGRESS.forEach(function (b) { if (f >= b[0]) pick = b[1]; });
+        if (pick !== "coast" && !done.coast) { done.coast = 1; sc.classList.add("st-coast"); }
+        if ((pick === "roads" || pick === "kit" || pick === "people") && !done.relief) { done.relief = 1; sc.classList.add("st-relief"); }
+        if ((pick === "kit" || pick === "people") && !done.roads) { done.roads = 1; sc.classList.add("st-roads"); }
+        key = pick;
+      }
+      switch (key) {
+        case "coast": case "smooth":
+          frames(Wm, loop("paint1", "paint2", 320, 2560)); idleBlink(Bd, T, 900); idleBlink(By, T, 1700);
+          if (!done.coast) { done.coast = 1; sc.classList.add("st-coast"); }
+          break;
+        case "relief":
+          frames(Bd, loop("shovelUp", "shovelDown", 380, 3040)); frames(Wm, pad([["wave", 600]], T, "idle")); idleBlink(By, T, 1200);
+          if (dirt) dirt.el.style.opacity = 1;
+          if (!done.relief) { done.relief = 1; sc.classList.add("st-relief"); }
+          break;
+        case "roads":
+          frames(By, loop("crouch", "idle", 460, 3680)); idleBlink(Wm, T, 700); frames(Bd, loop("shovelUp", "shovelDown", 380, 3040));
+          if (stones) stones.el.style.opacity = 1;
+          if (dirt) dirt.el.style.opacity = 0;
+          if (!done.roads) { done.roads = 1; sc.classList.add("st-roads"); }
+          break;
+        case "kit": case "workers":
+          if (crate) crate.el.style.opacity = 1;
+          frames(Bd, pad([["carry", 1600], ["idle", 400], ["blink", 140]], T, "idle"));
+          frames(By, loop("jump", "idle", 300, T)); motion(By, loop([0, 2], [0, 0], 300, T));
+          frames(Wm, pad(talk(1400, 1), T, "idle"));
+          sc.classList.add("st-kit");
+          break;
+        case "people":
+          sc.classList.remove("st-kit"); sc.classList.add("st-people");
+          [crate, stones, dirt].forEach(function (x) { if (x) x.el.style.opacity = 0; });
+          frames(Wm, loop("wave", "idle", 360, 2880)); frames(Bd, pad([["laugh", 900], ["idle", 300], ["wave", 1200]], T, "idle"));
+          frames(By, loop("jump", "laugh", 300, T)); motion(By, loop([0, 2], [0, 0], 300, T));
+          break;
+        default:                                // unknown step (e.g. a backend fetch): everyone busy
+          frames(Wm, loop("paint1", "paint2", 320, 2560)); frames(Bd, loop("shovelUp", "shovelDown", 380, 3040)); frames(By, loop("crouch", "idle", 460, 3680));
+      }
+    }
+    job("coast");
+    return { stage: job };
+  };
+
+  // one resident walks across the world: sea, hills, mountains, roads, then the city
+  V.walk = function (sc) {
+    var BIOME = { coast: "sea", smooth: "sea", relief: "mount", roads: "road", kit: "hills", workers: "hills", people: "city" };
+    var SETS = {
+      sea: [["s_lighthouse", 10], ["s_boat", 70], ["s_mill", 120]],
+      hills: [["s_hill", 0], ["oak", 64], ["s_pine", 96], ["birch", 140]],
+      mount: [["s_mountain", 0], ["s_pine", 64], ["s_mountain", 96], ["s_pine", 152]],
+      road: [["sign", 8], ["cone", 56], ["lamp", 90], ["hydrant", 132]],
+      city: [["s_house", 0], ["s_tower", 44], ["lamp", 86], ["s_house", 104], ["mailbox", 150]]
+    };
+    var L = 168, belts = {};
+    stars(sc, 8, 14);
+    var sky = el("div", "lclip sky", sc);
+    if (has("s_cloud")) { sprite(sky, "s_cloud", 30, 46).el.classList.add("ldrift"); sprite(sky, "s_cloud", 120, 54).el.classList.add("ldrift", "slow"); }
+    Object.keys(SETS).forEach(function (k) {
+      var b = el("div", "lbelt", sc);
+      [0, L].forEach(function (off) { SETS[k].forEach(function (p) { if (has(p[0])) sprite(b, p[0], p[1] + off, 0); }); });
+      belts[k] = b;
+    });
+    el("div", "lgnd walk scroll", sc);
+    var who = has("boy") ? "boy" : "woman";
+    var P = sprite(sc, who, 76, 5, who === "boy");   // walk to the right: the boy is drawn facing left
+    if (!P) return V.dots(sc);
+    frames(P, [["walkA", 160], ["idle", 160], ["walkB", 160], ["idle", 160]]);
+    motion(P, [[[0, 0], 160], [[0, 1], 160], [[0, 0], 160], [[0, 1], 160]]);
+    var ORDER = ["sea", "mount", "road", "hills", "city"];
+    function stage(key, i, n) {             // unknown steps (a backend boot): scenery follows the progress fraction
+      var cur = BIOME[key] || (n ? ORDER[Math.min(ORDER.length - 1, Math.floor((i + 1) / n * ORDER.length - 1e-9))] : "hills");
+      Object.keys(belts).forEach(function (k) { belts[k].classList.toggle("on", k === cur); });
+    }
+    stage("coast");
+    return { stage: stage };
+  };
+
+  // a parade of residents crossing the street, one after another; the old man reads his paper on the go
+  V.parade = function (sc) {
+    stars(sc, 8);
+    ground(sc, "walk");
+    [["lamp", 22], ["bench", 70], ["birch", 132]].forEach(function (p) { if (has(p[0])) sprite(sc, p[0], p[1], 5); });
+    var who = [["woman", false, "walk"], ["oldman", false, "read"], ["builder", false, "walk"], ["boy", true, "walk"]];
+    var n = 0;
+    who.forEach(function (w, k) {
+      if (!has(w[0])) return;
+      var lane = el("div", "lwalker", sc, "--d:" + (-k * 2.7).toFixed(1) + "s;--rx:" + (24 + k * 40));
+      var s = sprite(lane, w[0], 0, 5, w[1]);
+      if (w[2] === "walk") {
+        frames(s, [["walkA", 170], ["idle", 170], ["walkB", 170], ["idle", 170]]);
+        motion(s, [[[0, 0], 170], [[0, 1], 170], [[0, 0], 170], [[0, 1], 170]]);
+      } else {
+        frames(s, pad([["read", 2400], ["blink", 140]], 2800, "read"));
+        motion(s, [[[0, 0], 240], [[0, 1], 240]]);
+      }
+      n++;
+    });
+    if (!n) return V.dots(sc);
+    return {};
+  };
+
+  // one island grows a layer per boot step: sea -> beach -> meadows -> mountains and forest -> roads -> town
+  V.island = function (sc) {
+    var c = SPR.chars.island;
+    if (!c) return V.crew(sc);
+    stars(sc, 8, 12);
+    var FR = { coast: "coast", smooth: "smooth", relief: "relief", roads: "roads", kit: "roads", workers: "roads", people: "idle" };
+    var I = sprite(sc, "island", W / 2, 1);   // characters (the island is one) are placed by their centre
+    var A = sprite(sc, "woman", 16, 3), B = sprite(sc, "boy", W - 16, 3);
+    if (A) idleBlink(A, 3000, 1200); if (B) idleBlink(B, 3400, 2200);
+    var cur = null;
+    var LAYERS = ["coast", "smooth", "relief", "roads", "idle"];
+    function stage(key, i, n) {             // unknown steps (a backend boot): the island grows with the progress fraction
+      var f = FR[key] || (n ? LAYERS[Math.min(LAYERS.length - 1, Math.floor((i + 1) / n * LAYERS.length - 1e-9))] : "roads");
+      if (c.frames.indexOf(f) < 0) f = "idle";
+      if (f !== cur) {                       // new layer: flash the previous frame once, then settle with a 1 px bounce
+        frames(I, cur ? [[cur, 90], [f, 90], [cur, 90], [f, 1]] : [[f, 1]], 1);
+        motion(I, [[[0, 1], 120], [[0, 0], 1]], 1);
+        cur = f;
+      }
+      if (key === "people") { if (A) frames(A, loop("wave", "idle", 360, 2880)); if (B) { frames(B, loop("jump", "idle", 300, 2400)); motion(B, loop([0, 2], [0, 0], 300, 2400)); } }
+    }
+    frames(I, [["sea", 1]], 1); cur = "sea";
+    stage("coast");
+    return { stage: stage };
+  };
+
+  // fallback: three blinking squares (no sprites, or the scene failed)
+  V.dots = function (sc) {
+    sc.classList.add("ldots");
+    for (var i = 0; i < 3; i++) el("i", "", sc);
+    return {};
+  };
+
+  /* ---------- mounting ---------- */
+  function scene(root, variant) {
+    var v = V[variant] ? variant : DEFAULT;
+    root.classList.add("ldr-scene", "v-" + v);
+    var api = {};
+    try { api = (SPR ? V[v] : V.dots)(root) || {}; } catch (e) { console.warn("loader scene failed", e); root.textContent = ""; V.dots(root); }
+    return { stage: function (k, i, n) { try { if (api.stage) api.stage(k, i, n); } catch (e) { console.warn(e); } } };
+  }
+
+  var q = /[?&]loader=([a-z]+)/.exec(location.search);
+  var root = document.getElementById("loading");
+  var main = null;
+  if (root) {
+    var host = root.querySelector(".ldr-stage");
+    if (host) main = scene(host, q ? q[1] : DEFAULT);
+  }
+  window.LOADER = {
+    stage: function (key, text, i, n) {
+      if (!root) return;
+      var msg = document.getElementById("loadMsg"); if (msg && text) msg.textContent = text;
+      var bar = root.querySelector(".ldr-bar");
+      if (bar && n) {
+        bar.style.setProperty("--p", Math.min(1, (i + 1) / n));
+        bar.setAttribute("aria-valuenow", Math.round(Math.min(1, (i + 1) / n) * 100));
+      }
+      root.setAttribute("data-stage", key);
+      if (main) main.stage(key, i, n);
+    },
+    done: function () {
+      if (!root) return;
+      root.classList.add("out");
+      root.setAttribute("aria-busy", "false");
+      setTimeout(function () { if (root.parentNode) root.parentNode.removeChild(root); var st = document.getElementById("ldr-kf"); if (st) st.remove(); }, 420);
+    },
+    scene: scene,
+    STAGES: STAGES
+  };
+})();

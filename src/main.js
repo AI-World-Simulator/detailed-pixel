@@ -79,7 +79,8 @@ const ICE = [[71.5,-42,13,26,1.6],[64.4,-16.8,0.5,1.2,0.8],[-49,-73.3,2.2,0.7,0.
 /* ================= helpers ================= */
 const mercY = (lat) => { const l = Math.max(-85.05, Math.min(85.05, lat)) * Math.PI / 180; return (1 - Math.log(Math.tan(Math.PI / 4 + l / 2)) / Math.PI) / 2; };
 const latOf = (Y) => Math.atan(Math.sinh(Math.PI * (1 - 2 * Y))) * 180 / Math.PI;
-const tick = () => new Promise((r) => setTimeout(r, 0));
+// yield until the browser has painted (rAF, then a task); the 50 ms timer keeps boot going in background tabs where rAF is paused
+const tick = () => new Promise((r) => { let go = false; const f = () => { if (!go) { go = true; setTimeout(r, 0); } }; requestAnimationFrame(f); setTimeout(f, 50); });
 function mulberry(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function boxBlur(src, S, r, wrapX) {
   const tmp = new Float32Array(S * S), out = new Uint8Array(S * S), n = 2 * r + 1;
@@ -1331,18 +1332,26 @@ async function loadKit() {
 /* ================= boot ================= */
 async function boot() {
   const status = $("#loadMsg");
-  const say = async (t) => { (window.__bootLog = window.__bootLog || []).push([Math.round(performance.now()), t]); status.textContent = t; await tick(); };
+  // ?slowboot=8000 spreads that many ms of extra waiting over the steps (to design the loader against a real 5-10 s backend boot)
+  const STEPS = ["coast", "smooth", "relief", "roads", "kit", "workers", "people"];
+  const slow = Math.min(120000, Math.max(0, +new URLSearchParams(location.search).get("slowboot") || 0));
+  const say = async (key, t) => {
+    (window.__bootLog = window.__bootLog || []).push([Math.round(performance.now()), t]);
+    if (window.LOADER) LOADER.stage(key, t, STEPS.indexOf(key), STEPS.length); else status.textContent = t;
+    await tick();
+    if (slow) await new Promise((r) => setTimeout(r, slow / STEPS.length));
+  };
   resize();
-  await say("Рисуем береговые линии…");
+  await say("coast", "Рисуем береговые линии…");
   const topo = JSON.parse($("#land").textContent);
   const polys = decodeTopo(topo);
   const MS = 4096;
   let mask = buildMask(polys, MS);
-  await say("Сглаживаем побережья…");
+  await say("smooth", "Сглаживаем побережья…");
   const blurBase = downsample(mask, MS, 8);
   mask = boxBlur(mask, MS, 2);
   let blur = boxBlur(blurBase, 512, 5); blur = boxBlur(blur, 512, 5);
-  await say("Поднимаем горы и пустыни…");
+  await say("relief", "Поднимаем горы и пустыни…");
   const CSZ = 1024;
   const cd = climateLayer(CSZ, drawEllipses(DESERTS));
   const cm = climateLayer(CSZ, drawRanges);
@@ -1354,7 +1363,7 @@ async function boot() {
     return { name, row, pop, X, Y, mx: X * C, my: Y * C, k, ru: i < 21 || name === "Кишинёв" };
   });
   citiesByPop = cities.slice().sort((a, b) => b.pop - a.pop);
-  await say("Прокладываем дороги…");
+  await say("roads", "Прокладываем дороги…");
   const maskAt = (lat, lon) => { const X = (lon + 180) / 360, Y = mercY(lat); const x = Math.floor(X * MS) % MS, y = Math.min(MS - 1, Math.floor(Y * MS)); return mask[y * MS + x] / 255; };
   const roads = [], seen = new Set();
   const hav = (a, b) => { const R = 6371, p1 = a.row[1] * Math.PI / 180, p2 = b.row[1] * Math.PI / 180, dp = p2 - p1, dl = (b.row[2] - a.row[2]) * Math.PI / 180; const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
@@ -1372,7 +1381,7 @@ async function boot() {
     }
   });
   const cityData = cities.map((c, i) => ({ mx: c.mx, my: c.my, pop: c.pop, sty: STY[regionOf(c)], seed: i * 7919 + 17, lm: LMK[c.name] || "" }));
-  await say("Распаковываем набор спрайтов…");
+  await say("kit", "Распаковываем набор спрайтов…");
   const spr = await loadKit();
   (window.__bootLog = window.__bootLog || []).push([Math.round(performance.now()), "kit " + (spr ? spr.w + "x" + spr.h : "none")]);
   const data = { mask, ms: MS, blur, bs: 512, cd, cm, ci, cs: CSZ, cities: cityData, roads, spr };
@@ -1380,7 +1389,7 @@ async function boot() {
   window.__bootLog.push([Math.round(performance.now()), "init"]);
   const gc = G.cities();
   cities.forEach((c, i) => { c.g = gc[i]; c.lms = G.landmarks(c.g); });
-  await say("Запускаем генераторы…");
+  await say("workers", "Запускаем генераторы…");
   try {
     const src = $("#gen").textContent + "\nself.onmessage=function(e){var m=e.data;if(m.t==='init'){GEN.init(m.d);self.postMessage({t:'ready'});}else if(m.t==='tile'){var r=GEN.renderTile(m.z,m.x,m.y);self.postMessage({t:'tile',id:m.id,buf:r.img.buffer,msk:r.msk.buffer},[r.img.buffer,r.msk.buffer]);}};";
     const url = URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
@@ -1398,7 +1407,7 @@ async function boot() {
     console.warn("Workers unavailable, rendering on main thread", err);
     workers.forEach((w) => w.terminate()); workers = []; freeWorkers = []; useMain = true;
   }
-  await say("Заселяем города…");
+  await say("people", "Заселяем города…");
   await tick();
   setupClouds();
   spawnAgents();
@@ -1407,7 +1416,7 @@ async function boot() {
   buildJumps();
   bindInput();
   try { await document.fonts.load('600 13px "Pixelify Sans"'); } catch (e) {}
-  $("#loading").hidden = true;
+  if (window.LOADER) LOADER.done(); else $("#loading").hidden = true;
   (window.__bootLog = window.__bootLog || []).push([Math.round(performance.now()), "ready", useMain ? "main-thread" : workers.length + " workers"]);
   requestAnimationFrame(frame);
 }

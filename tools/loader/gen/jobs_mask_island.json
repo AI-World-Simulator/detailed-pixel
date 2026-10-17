@@ -1,0 +1,6 @@
+[{"name": "m_island_idle", "kind": "bgmask", "images": ["out/z_island_b.png"]},
+ {"name": "m_island_roads", "kind": "bgmask", "images": ["out/q_island_roads.png"]},
+ {"name": "m_island_relief", "kind": "bgmask", "images": ["out/q_island_relief.png"]},
+ {"name": "m_island_smooth", "kind": "bgmask", "images": ["out/q_island_smooth.png"]},
+ {"name": "m_island_coast", "kind": "bgmask", "images": ["out/q_island_coast.png"]},
+ {"name": "m_island_sea", "kind": "bgmask", "images": ["out/q_island_sea.png"]}]

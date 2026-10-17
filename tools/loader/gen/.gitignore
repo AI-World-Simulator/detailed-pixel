@@ -1,0 +1,5 @@
+# raw renders and intermediate cuts (rebuild with the jobs_*.json files and tools/loader/assets.py, see ../README.md)
+out/
+base/
+cut_*/
+spec_*.json

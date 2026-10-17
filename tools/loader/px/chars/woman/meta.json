@@ -1,0 +1,19 @@
+{
+ "name": "woman",
+ "w": 39,
+ "h": 48,
+ "feet": 44,
+ "cx": 23,
+ "period": 12.28,
+ "frames": [
+  "idle",
+  "blink",
+  "talk",
+  "laugh",
+  "wave",
+  "paint1",
+  "paint2",
+  "walkA",
+  "walkB"
+ ]
+}

@@ -1,0 +1,272 @@
+[
+ {
+  "name": "q_woman_blink",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 101,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: her eyes are closed, drawn as short flat dark lines. Nothing else changes."
+ },
+ {
+  "name": "q_woman_talk",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 102,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: her mouth is open as if she is talking, a small dark open mouth. Nothing else changes."
+ },
+ {
+  "name": "q_woman_laugh",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 103,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: she is laughing happily: eyes closed as upward arcs and a wide open smiling mouth. Nothing else changes."
+ },
+ {
+  "name": "q_woman_wave",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 104,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: her right arm is raised high above her head, waving hello with an open hand."
+ },
+ {
+  "name": "q_woman_paint1",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 105,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: she holds a big paint brush with both hands, raised above her shoulder, ready to paint."
+ },
+ {
+  "name": "q_woman_paint2",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 106,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: she holds a big paint brush with both hands, the brush tip pressed down on the ground beside her feet, painting the ground."
+ },
+ {
+  "name": "q_woman_walkA",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 107,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: she is walking: her left leg steps forward and her right arm swings forward, mid-stride, same facing direction."
+ },
+ {
+  "name": "q_woman_walkB",
+  "kind": "qedit",
+  "images": [
+   "base/s1_0.png"
+  ],
+  "seed": 108,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: she is walking: her right leg steps forward and her left arm swings forward, mid-stride, same facing direction."
+ },
+ {
+  "name": "q_builder_blink",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 109,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his eyes are closed, drawn as short flat dark lines. Nothing else changes."
+ },
+ {
+  "name": "q_builder_talk",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 110,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his mouth is open as if he is talking, a small dark open mouth. Nothing else changes."
+ },
+ {
+  "name": "q_builder_laugh",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 111,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he is laughing happily: eyes closed as upward arcs and a wide open smiling mouth. Nothing else changes."
+ },
+ {
+  "name": "q_builder_wave",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 112,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his right arm is raised high above his head, waving hello with an open hand."
+ },
+ {
+  "name": "q_builder_shovelUp",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 113,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he holds a shovel with both hands, lifting it up high with a lump of brown dirt on the blade."
+ },
+ {
+  "name": "q_builder_shovelDown",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 114,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he holds a shovel with both hands, the blade pushed down into the ground in front of his feet."
+ },
+ {
+  "name": "q_builder_carry",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 115,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he carries a wooden crate in both arms in front of his chest."
+ },
+ {
+  "name": "q_builder_walkA",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 116,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he is walking: his left leg steps forward and his right arm swings forward, mid-stride, same facing direction."
+ },
+ {
+  "name": "q_builder_walkB",
+  "kind": "qedit",
+  "images": [
+   "base/s1_1.png"
+  ],
+  "seed": 117,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he is walking: his right leg steps forward and his left arm swings forward, mid-stride, same facing direction."
+ },
+ {
+  "name": "q_oldman_blink",
+  "kind": "qedit",
+  "images": [
+   "base/s1_2.png"
+  ],
+  "seed": 118,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his eyes behind the glasses are closed, drawn as short flat dark lines. Nothing else changes."
+ },
+ {
+  "name": "q_oldman_talk",
+  "kind": "qedit",
+  "images": [
+   "base/s1_2.png"
+  ],
+  "seed": 119,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his mouth under the beard is open as if he is talking. Nothing else changes."
+ },
+ {
+  "name": "q_oldman_laugh",
+  "kind": "qedit",
+  "images": [
+   "base/s1_2.png"
+  ],
+  "seed": 120,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he is laughing happily with a wide open smiling mouth. Nothing else changes."
+ },
+ {
+  "name": "q_oldman_read",
+  "kind": "qedit",
+  "images": [
+   "base/s1_2.png"
+  ],
+  "seed": 121,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he holds an open newspaper in both hands in front of his chest, reading it."
+ },
+ {
+  "name": "q_oldman_point",
+  "kind": "qedit",
+  "images": [
+   "base/s1_2.png"
+  ],
+  "seed": 122,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his right arm is stretched out to the side, pointing with the index finger."
+ },
+ {
+  "name": "q_boy_blink",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 123,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his eyes are closed, drawn as short flat dark lines. Nothing else changes."
+ },
+ {
+  "name": "q_boy_talk",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 124,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his mouth is open as if he is talking, a small dark open mouth. Nothing else changes."
+ },
+ {
+  "name": "q_boy_laugh",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 125,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he is laughing happily: eyes closed as upward arcs and a wide open smiling mouth. Nothing else changes."
+ },
+ {
+  "name": "q_boy_jump",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 126,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he cheers with both arms raised high above his head and a happy open mouth."
+ },
+ {
+  "name": "q_boy_crouch",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 127,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he crouches down on one knee, placing a grey paving stone on the ground in front of him."
+ },
+ {
+  "name": "q_boy_wave",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 128,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: his right arm is raised high above his head, waving hello with an open hand."
+ },
+ {
+  "name": "q_boy_walkA",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 129,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he is walking: his left leg steps forward and his right arm swings forward, mid-stride, same facing direction."
+ },
+ {
+  "name": "q_boy_walkB",
+  "kind": "qedit",
+  "images": [
+   "base/s1_3.png"
+  ],
+  "seed": 130,
+  "prompt": "Edit <image1>: keep the same pixel art character exactly as it is: same chunky pixel size, same black outlines, same colours, same face, same hair, same clothes, same body size, same position on the canvas, same plain light grey background with the same soft grey ground shadow. Change only this: he is walking: his right leg steps forward and his left arm swings forward, mid-stride, same facing direction."
+ }
+]

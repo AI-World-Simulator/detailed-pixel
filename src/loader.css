@@ -1,0 +1,106 @@
+/* ================= boot loader (src/loader.js) =================
+   Art pixels scale by an integer --s; every animated property is transform or opacity. */
+#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink); z-index: 10; transition: opacity 0.35s ease-out; }
+#loading.out { opacity: 0; pointer-events: none; }
+.ldr-box { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 16px; text-align: center; }
+.ldr-box .logo { font-family: var(--display); font-size: clamp(14px, 3vw, 22px); letter-spacing: 0.12em; text-shadow: 3px 3px 0 #050b14; }
+#loadMsg { color: var(--muted); font-size: 16px; min-height: 1.3em; }
+.ldr-stage { --s: 3; position: relative; width: calc(var(--s) * 168px); height: calc(var(--s) * 72px); overflow: hidden;
+  opacity: 0; animation: ldr-show 0s step-end 0.35s forwards; }   /* fast boots never flash a half-started scene */
+@media (max-width: 560px) { .ldr-stage { --s: 2; } }
+@media (max-width: 370px) { .ldr-box { padding: 0 8px; } }          /* 336 px scene + gutters fits a 360 px phone */
+@media (max-width: 351px) { .ldr-stage { --s: 1; } }                /* never a fractional scale: pixels stay crisp */
+@keyframes ldr-show { to { opacity: 1; } }
+.ldr-bar { --p: 0; width: calc(var(--s, 3) * 120px); max-width: 80vw; height: 8px; background: #16263c; box-shadow: 0 0 0 2px #050b14, inset 0 0 0 1px var(--edge); position: relative; overflow: hidden; }
+.ldr-bar::after { content: ""; position: absolute; inset: 2px; background: var(--gold); transform-origin: left; transform: scaleX(var(--p)); transition: transform 0.4s steps(8, end); }
+
+/* sprites: .la positions (art px), .lp clips one frame, its <i> is the frame strip shifted by keyframes */
+.la { position: absolute; left: calc(var(--s) * var(--x) * 1px); bottom: calc(var(--s) * var(--y) * 1px);
+  width: calc(var(--s) * var(--w) * 1px); height: calc(var(--s) * var(--h) * 1px); }
+.lp { width: 100%; height: 100%; overflow: hidden; }
+.lp.flip { transform: scaleX(-1); }
+.lp > i { display: block; width: calc(var(--n) * 100%); height: 100%; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+
+/* speech bubble with a stepped pixel tail */
+.lb { position: absolute; left: calc(var(--s) * var(--x) * 1px); bottom: calc(var(--s) * var(--y) * 1px);
+  width: calc(var(--s) * var(--w) * 1px); height: calc(var(--s) * var(--h) * 1px); background: #f4efe2;
+  box-shadow: 0 0 0 calc(var(--s) * 1px) #050b14, calc(var(--s) * 1px) calc(var(--s) * 2px) 0 calc(var(--s) * 1px) rgba(5, 11, 20, 0.35); opacity: 0; }
+.lb::before, .lb::after { content: ""; position: absolute; background: #f4efe2; }
+.lb::before { left: calc(var(--s) * 3px); bottom: calc(var(--s) * -3px); width: calc(var(--s) * 3px); height: calc(var(--s) * 3px);
+  box-shadow: calc(var(--s) * -1px) 0 0 #050b14, calc(var(--s) * 1px) 0 0 #050b14, 0 calc(var(--s) * 1px) 0 #050b14; }
+.lb::after { left: calc(var(--s) * 2px); bottom: calc(var(--s) * -4px); width: calc(var(--s) * 1px); height: calc(var(--s) * 1px); background: #050b14; }
+.lb.flip::before { left: auto; right: calc(var(--s) * 3px); }
+.lb.flip::after { left: auto; right: calc(var(--s) * 2px); }
+
+/* ground: sidewalk slabs; .scroll moves them one slab per 0.48 s (25 art px/s, same as the scenery belts) */
+.lgnd { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--s) * 5px); overflow: hidden; background: #2c3546; }
+.lgnd::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: calc(100% + var(--s) * 12px); border-top: calc(var(--s) * 1px) solid #5b6a82;
+  background: repeating-linear-gradient(90deg, #3c475a 0 calc(var(--s) * 11px), #2c3546 calc(var(--s) * 11px) calc(var(--s) * 12px)); }
+.lgnd.scroll::before { animation: ldr-slab 0.48s steps(12) infinite; }
+@keyframes ldr-slab { to { transform: translateX(calc(var(--s) * -12px)); } }
+
+/* crew: land under a sliding sea, mountains/houses rising out of a clip, road slabs appearing one by one */
+.lland, .lcover { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--s) * 9px); }
+.lland { background: repeating-linear-gradient(90deg, #4f9a3a 0 calc(var(--s) * 5px), #468c34 calc(var(--s) * 5px) calc(var(--s) * 7px)); box-shadow: inset 0 calc(var(--s) * 1px) 0 #7cc24f; }
+.lcover { overflow: hidden; background: #1b4f8a; z-index: 1; }
+.lcover::before { content: ""; position: absolute; left: 0; top: calc(var(--s) * 2px); width: calc(100% + var(--s) * 8px); height: calc(var(--s) * 4px);
+  background: repeating-linear-gradient(90deg, #6fb3e8 0 calc(var(--s) * 2px), transparent calc(var(--s) * 2px) calc(var(--s) * 8px));
+  animation: ldr-wave 0.8s steps(8) infinite; }
+@keyframes ldr-wave { to { transform: translateX(calc(var(--s) * -8px)); } }
+.st-coast .lcover { animation: ldr-unroll 2.8s steps(56) forwards; }
+@keyframes ldr-unroll { to { transform: translateX(100%); } }
+.lclip { position: absolute; left: 0; right: 0; overflow: hidden; }
+.lclip.mnt, .lclip.town { bottom: calc(var(--s) * 9px); height: calc(var(--s) * 50px); }
+.mnt .la, .town .la { transform: translateY(100%); }
+.st-relief .mnt .la { animation: ldr-rise 1.6s steps(var(--h)) forwards; }
+.st-people .town .la { animation: ldr-rise 0.9s steps(var(--h)) forwards; }
+.st-people .town .la:nth-child(2) { animation-delay: 0.25s; } .st-people .town .la:nth-child(3) { animation-delay: 0.5s; } .st-people .town .la:nth-child(4) { animation-delay: 0.7s; }
+@keyframes ldr-rise { from { transform: translateY(100%); } to { transform: none; } }
+.lroad { position: absolute; left: 0; right: 0; bottom: calc(var(--s) * 1px); height: calc(var(--s) * 5px); z-index: 2; display: flex; }
+.lroad i { flex: 0 0 calc(var(--s) * 12px); height: 100%; background: #59606e; opacity: 0;
+  box-shadow: inset 0 calc(var(--s) * 1px) 0 #7b8394, inset calc(var(--s) * -1px) 0 0 #4a505c;
+  background-image: linear-gradient(90deg, transparent calc(var(--s) * 3px), #e8c547 calc(var(--s) * 3px) calc(var(--s) * 8px), transparent calc(var(--s) * 8px));
+  background-size: 100% calc(var(--s) * 1px); background-position: 0 calc(var(--s) * 2px); background-repeat: no-repeat; }
+.st-roads .lroad i { animation: ldr-on 0s step-end forwards; animation-delay: calc(var(--i) * 160ms); }
+@keyframes ldr-on { to { opacity: 1; } }
+.lpop { opacity: 0; }
+.st-kit .lpop { animation: ldr-pop 1.6s steps(16) infinite; animation-delay: var(--d, 0s); }
+@keyframes ldr-pop { 0% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(calc(var(--s) * -16px)); } }
+
+/* walk: scenery belts scroll one art pixel per step; the belt of the current step fades in */
+.lbelt { position: absolute; left: 0; bottom: calc(var(--s) * 5px); width: calc(var(--s) * 336px); height: calc(var(--s) * 64px);
+  opacity: 0; transition: opacity 0.6s; animation: ldr-belt 6.72s steps(168) infinite; }
+.lbelt.on { opacity: 1; }
+@keyframes ldr-belt { to { transform: translateX(calc(var(--s) * -168px)); } }
+.lclip.sky { top: 0; bottom: 0; }
+.ldrift { animation: ldr-drift 24s steps(240) infinite; } .ldrift.slow { animation-duration: 40s; }
+@keyframes ldr-drift { from { transform: translateX(calc(var(--s) * 60px)); } to { transform: translateX(calc(var(--s) * -180px)); } }
+
+/* parade: each walker lane carries a body centre from -40 to 200 in whole art pixels (240 px in 10.8 s),
+   lanes started mid-way by negative delays so the street is already busy on the first frame */
+.lwalker { position: absolute; inset: 0; transform: translateX(calc(var(--s) * -40px)); animation: ldr-parade 10.8s steps(240) infinite; animation-delay: var(--d, 0s); }
+@keyframes ldr-parade { from { transform: translateX(calc(var(--s) * -40px)); } to { transform: translateX(calc(var(--s) * 200px)); } }
+
+/* island: tiles drop in place when their step starts */
+.lisle { position: absolute; inset: 0; }
+.ldrop { opacity: 0; }
+.ldrop.in { animation: ldr-drop 0.36s steps(6) forwards; animation-delay: var(--d, 0s); }
+@keyframes ldr-drop { 0% { opacity: 1; transform: translateY(calc(var(--s) * -6px)); } 100% { opacity: 1; transform: none; } }
+
+/* fallback dots: negative delays so the row is mid-cycle on the first frame */
+.ldots { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.ldots i { width: 10px; height: 10px; background: var(--gold); animation: ldr-blink 1s steps(2) infinite; }
+.ldots i:nth-child(2) { animation-delay: -0.66s; } .ldots i:nth-child(3) { animation-delay: -0.33s; }
+@keyframes ldr-blink { 50% { opacity: 0.2; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ldr-stage .lp > i, .ldr-stage .lmv, .lgnd.scroll::before, .lcover::before, .lbelt, .ldrift, .lpop { animation: none !important; }
+  .ldr-stage { animation: ldr-show 0s step-end 0.35s forwards, ldr-pulse 2.4s ease-in-out 0.35s infinite; }
+  @keyframes ldr-pulse { 50% { opacity: 0.72; } }
+  .st-coast .lcover { animation: none; transform: translateX(100%); }
+  .st-relief .mnt .la, .st-people .town .la, .ldrop.in { animation: none; opacity: 1; transform: none; }
+  .st-roads .lroad i { animation: none; opacity: 1; }
+  .lwalker { animation: none; transform: translateX(calc(var(--s) * var(--rx) * 1px)); }
+  .ldots i { animation: ldr-blink 2.4s ease-in-out infinite; }
+}
+.lstar { position: absolute; left: calc(var(--s) * var(--x) * 1px); bottom: calc(var(--s) * var(--y) * 1px); width: calc(var(--s) * 1px); height: calc(var(--s) * 1px); background: #cfe0ff; opacity: 0.25; }
