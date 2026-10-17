@@ -1,10 +1,11 @@
 {
  "name": "builder",
- "w": 50,
+ "w": 51,
  "h": 51,
- "feet": 46,
+ "feet": 45,
  "cx": 19,
  "period": 12.28,
+ "colors": 28,
  "frames": [
   "idle",
   "blink",
@@ -15,6 +16,8 @@
   "shovelDown",
   "carry",
   "walkA",
-  "walkB"
+  "walkB",
+  "squash",
+  "squash_laugh"
  ]
 }

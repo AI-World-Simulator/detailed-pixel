@@ -1,0 +1,106 @@
+{
+ "blink": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.176,
+  "area": 0.986,
+  "outline": 0.916,
+  "lonely": 0,
+  "drift": [
+   0,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.0
+ },
+ "talk": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.09,
+  "area": 1.0,
+  "outline": 1.0,
+  "lonely": 0,
+  "drift": [
+   0,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.0
+ },
+ "laugh": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.242,
+  "area": 1.0,
+  "outline": 1.0,
+  "lonely": 0,
+  "drift": [
+   0,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.0
+ },
+ "read": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.01,
+  "area": 1.064,
+  "outline": 1.0,
+  "lonely": 4,
+  "drift": [
+   0,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.095
+ },
+ "point": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.014,
+  "area": 1.053,
+  "outline": 1.0,
+  "lonely": 1,
+  "drift": [
+   1,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.164
+ },
+ "squash": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.0,
+  "area": 0.984,
+  "outline": 1.0,
+  "lonely": 0,
+  "note": "derived from idle"
+ },
+ "squash_laugh": {
+  "contact": 0,
+  "face_diff": 0.0,
+  "note": "derived from laugh"
+ }
+}

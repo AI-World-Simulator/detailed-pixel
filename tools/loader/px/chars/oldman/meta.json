@@ -1,16 +1,19 @@
 {
  "name": "oldman",
- "w": 38,
+ "w": 40,
  "h": 45,
- "feet": 43,
+ "feet": 42,
  "cx": 24,
  "period": 12.28,
+ "colors": 24,
  "frames": [
   "idle",
   "blink",
   "talk",
   "laugh",
   "read",
-  "point"
+  "point",
+  "squash",
+  "squash_laugh"
  ]
 }

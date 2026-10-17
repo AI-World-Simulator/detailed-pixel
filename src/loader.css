@@ -32,11 +32,11 @@
 .lb.flip::before { left: auto; right: calc(var(--s) * 3px); }
 .lb.flip::after { left: auto; right: calc(var(--s) * 2px); }
 
-/* ground: sidewalk slabs; .scroll moves them one slab per 0.48 s (25 art px/s, same as the scenery belts) */
+/* ground: sidewalk slabs; .scroll moves them one slab per 0.4 s (30 art px/s = 2 frames per px at 60 Hz, same as the belts) */
 .lgnd { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--s) * 5px); overflow: hidden; background: #2c3546; }
 .lgnd::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: calc(100% + var(--s) * 12px); border-top: calc(var(--s) * 1px) solid #5b6a82;
   background: repeating-linear-gradient(90deg, #3c475a 0 calc(var(--s) * 11px), #2c3546 calc(var(--s) * 11px) calc(var(--s) * 12px)); }
-.lgnd.scroll::before { animation: ldr-slab 0.48s steps(12) infinite; }
+.lgnd.scroll::before { animation: ldr-slab 0.4s steps(12) infinite; }
 @keyframes ldr-slab { to { transform: translateX(calc(var(--s) * -12px)); } }
 
 /* crew: land under a sliding sea, mountains/houses rising out of a clip, road slabs appearing one by one */
@@ -69,16 +69,16 @@
 
 /* walk: scenery belts scroll one art pixel per step; the belt of the current step fades in */
 .lbelt { position: absolute; left: 0; bottom: calc(var(--s) * 5px); width: calc(var(--s) * 336px); height: calc(var(--s) * 64px);
-  opacity: 0; transition: opacity 0.6s; animation: ldr-belt 6.72s steps(168) infinite; }
+  opacity: 0; transition: opacity 0.6s; animation: ldr-belt 5.6s steps(168) infinite; }   /* 30 art px/s, with the ground */
 .lbelt.on { opacity: 1; }
 @keyframes ldr-belt { to { transform: translateX(calc(var(--s) * -168px)); } }
 .lclip.sky { top: 0; bottom: 0; }
 .ldrift { animation: ldr-drift 24s steps(240) infinite; } .ldrift.slow { animation-duration: 40s; }
 @keyframes ldr-drift { from { transform: translateX(calc(var(--s) * 60px)); } to { transform: translateX(calc(var(--s) * -180px)); } }
 
-/* parade: each walker lane carries a body centre from -40 to 200 in whole art pixels (240 px in 10.8 s),
-   lanes started mid-way by negative delays so the street is already busy on the first frame */
-.lwalker { position: absolute; inset: 0; transform: translateX(calc(var(--s) * -40px)); animation: ldr-parade 10.8s steps(240) infinite; animation-delay: var(--d, 0s); }
+/* parade: each walker lane carries a body centre from -40 to 200 in whole art pixels (240 px in 12 s = 20 px/s,
+   50 ms per px = 3 frames at 60 Hz); lanes started mid-way by uneven negative delays */
+.lwalker { position: absolute; inset: 0; transform: translateX(calc(var(--s) * -40px)); animation: ldr-parade 12s steps(240) infinite; animation-delay: var(--d, 0s); }
 @keyframes ldr-parade { from { transform: translateX(calc(var(--s) * -40px)); } to { transform: translateX(calc(var(--s) * 200px)); } }
 
 /* island: tiles drop in place when their step starts */

@@ -78,10 +78,12 @@ def chars():
             m = f"out/m_{name}_{f}.png"                  # BiRefNet mask (cgen kind "bgmask") for light objects
             if os.path.exists(os.path.join(GEN, m)):
                 fr[f] = {"src": p, "mask": m}
-        spec = {"name": name, "colors": 32, "base": base, "frames": fr}
+        spec = {"name": name, "colors": 28, "base": base, "frames": fr}
         if name in CHARS:
             spec["period"] = period
+            spec["squash_from"] = ["laugh"]
         else:                                     # the island: BiRefNet masks (snow has no outline), tone-matched edits
+            spec["kind"] = "terrain"
             spec["colors"] = 160                 # small snow cap must not merge into the sand
             spec["period"] = ISLAND_PERIOD
             spec["match_colors"] = True

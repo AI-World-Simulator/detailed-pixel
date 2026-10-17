@@ -1,0 +1,160 @@
+{
+ "blink": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.036,
+  "area": 1.0,
+  "outline": 1.0,
+  "lonely": 8,
+  "drift": [
+   0,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.0
+ },
+ "talk": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.032,
+  "area": 1.0,
+  "outline": 1.0,
+  "lonely": 8,
+  "drift": [
+   0,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.0
+ },
+ "laugh": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.129,
+  "area": 1.0,
+  "outline": 1.0,
+  "lonely": 8,
+  "drift": [
+   -1,
+   0
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   0,
+   0
+  ],
+  "head_mismatch": 0.0
+ },
+ "jump": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.02,
+  "area": 1.196,
+  "outline": 1.0,
+  "lonely": 6,
+  "drift": [
+   6,
+   -21
+  ],
+  "ground_shift": 0,
+  "head_offset": [
+   -1,
+   2
+  ],
+  "head_mismatch": 0.437
+ },
+ "crouch": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.0,
+  "area": 1.176,
+  "outline": 1.0,
+  "lonely": 11,
+  "drift": [
+   39,
+   0
+  ],
+  "ground_shift": 4,
+  "head_offset": [
+   4,
+   0
+  ],
+  "head_mismatch": 0.158
+ },
+ "wave": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.0,
+  "area": 1.179,
+  "outline": 1.0,
+  "lonely": 8,
+  "drift": [
+   0,
+   19
+  ],
+  "ground_shift": -1,
+  "head_offset": [
+   -1,
+   0
+  ],
+  "head_mismatch": 0.069
+ },
+ "walkA": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.0,
+  "area": 1.021,
+  "outline": 1.0,
+  "lonely": 9,
+  "drift": [
+   -10,
+   -5
+  ],
+  "ground_shift": -1,
+  "head_offset": [
+   -1,
+   0
+  ],
+  "head_mismatch": 0.302
+ },
+ "walkB": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.0,
+  "area": 1.044,
+  "outline": 1.0,
+  "lonely": 9,
+  "drift": [
+   -6,
+   -1
+  ],
+  "ground_shift": -2,
+  "head_offset": [
+   -1,
+   0
+  ],
+  "head_mismatch": 0.405
+ },
+ "squash": {
+  "contact": 0,
+  "air": false,
+  "face_diff": 0.0,
+  "area": 0.982,
+  "outline": 1.0,
+  "lonely": 8,
+  "note": "derived from idle"
+ },
+ "squash_laugh": {
+  "contact": 0,
+  "face_diff": 0.0,
+  "note": "derived from laugh"
+ }
+}

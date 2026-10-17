@@ -68,11 +68,54 @@
     play(e, [track(segs, function (v) { return "opacity:" + v; })], count);
   }
   function has(name) { return !!(SPR.chars[name] || SPR.props[name]); }
-  // talking: alternating mouth frames with uneven, deterministic lengths
+  // talking: uneven mouth flaps, a longer closed "word gap" every 4th close, the line always ends with a closed mouth
   var TALK = [130, 170, 110, 190, 140, 120, 180, 150];
   function talk(ms, seed, a, b) {
-    var out = [], t = 0, k = seed || 0;
-    while (t < ms) { var d = Math.min(TALK[k % TALK.length], ms - t); out.push([k % 2 ? (b || "idle") : (a || "talk"), d]); t += d; k++; }
+    var out = [], t = 0, k = seed || 0, n = 0;
+    a = a || "talk"; b = b || "idle";
+    while (t < ms) {
+      var f = k % 2 ? b : a, d = TALK[k % TALK.length];
+      if (f === b && ++n % 4 === 0) d += 260;
+      d = Math.min(d, ms - t); out.push([f, d]); t += d; k++;
+    }
+    if (out.length && out[out.length - 1][0] === a) out[out.length - 1][0] = b;
+    return out;
+  }
+  function rng(seed) {                       // xorshift32: the same variety on every load, different per character
+    var x = (Math.imul((seed | 0) ^ 0x9e3779b9, 0x85ebca6b) >>> 0) || 1;
+    return function () { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
+  }
+  // standing life: blinks 2-5.5 s apart (first one early), ~15 % double, never triple; each character gets its own
+  // loop length (7300 / 8900 / 10700 ms...) so nobody blinks in sync and the loop is hard to spot
+  function idleLife(s, total, seed, base) {
+    var r = rng(seed), f = base || "idle", out = [], t = 0, gap = 600 + r() * 2400;
+    while (t + gap + 140 + 400 < total) {
+      out.push([f, gap | 0], ["blink", 140]); t += (gap | 0) + 140;
+      if (r() < 0.15 && t + 500 < total) { var g = 160 + r() * 80 | 0; out.push([f, g], ["blink", 120]); t += g + 120; }
+      gap = 2000 + r() * 3500;
+    }
+    frames(s, pad(out, total, f));
+  }
+  // a hop: anticipation squash, launch, held apex, fall, landing squash (heights in art px); frame f in the air
+  function hop(f) {                          // the squash keeps the expression of the airborne frame (squash_laugh)
+    var q = f === "laugh" ? "squash_laugh" : "squash";
+    return [[q, 0, 110], [f, 2, 70], [f, 4, 60], [f, 5, 150], [f, 4, 60], [f, 2, 60], [q, 0, 100]];
+  }
+  function cheer(s, rests, f) {              // hops with a different rest after each: frames and lift share one length
+    var fr = [], mv = [];
+    rests.forEach(function (rest) {
+      hop(f || "jump").concat([["idle", 0, rest]]).forEach(function (h) { fr.push([h[0], h[2]]); mv.push([[0, h[1]], h[2]]); });
+    });
+    frames(s, fr); motion(s, mv);
+  }
+  // a fixed-length timeline: events [[at ms, [[value, ms], ...]], ...], gaps filled with `base`
+  function timeline(total, base, events) {
+    var out = [], t = 0;
+    events.sort(function (x, y) { return x[0] - y[0]; }).forEach(function (e) {
+      if (e[0] > t) { out.push([base, e[0] - t]); t = e[0]; }
+      e[1].forEach(function (g) { var d = Math.min(g[1], total - t); if (d > 0) { out.push([g[0], d]); t += d; } });
+    });
+    if (t < total) out.push([base, total - t]);
     return out;
   }
   function pad(segs, total, f) {            // fill a track up to `total` ms with frame f
@@ -86,9 +129,7 @@
     while (t < total) { out.push([k % 2 ? b : a, Math.min(ms, total - t)]); t += ms; k++; }
     return out;
   }
-  function idleBlink(s, total, at) {         // stand, blink once at `at` ms
-    frames(s, pad([["idle", at], ["blink", 140]], total, "idle"));
-  }
+  function still(s) { if (s) s.el.style.animation = ""; }   // drop a motion track (e.g. hops) when the job changes
 
   /* ---------- scene pieces ---------- */
   function bubble(scene, x, y, w, h, flip) {
@@ -122,20 +163,24 @@
     if (has("bench")) sprite(sc, "bench", 66, 5);
     var A = sprite(sc, "woman", 52, 5), B = sprite(sc, "builder", 110, 5, true);
     if (!A || !B) return V.dots(sc);
+    // 14 s loop. A: line 0-2.8 s, B answers after a 0.5 s pause (3.3-6.1 s), A laughs first (5.85), B joins (6.35),
+    // A again 7.9-10.5, B 11.0-13.6; listeners nod or blink after the other's pauses, never in sync
     var T = 14000;
-    frames(A, pad([].concat(talk(2800, 0), [["idle", 1200], ["blink", 140], ["idle", 1660], ["laugh", 1400], ["idle", 200]],
-      talk(2600, 3), [["idle", 1400], ["blink", 140]]), T, "idle"));
-    frames(B, pad([["idle", 1500], ["blink", 140], ["idle", 1360], ["wave", 700]].concat(talk(2100, 2),
-      [["laugh", 1400], ["idle", 700], ["blink", 140], ["idle", 1960]], talk(2600, 5)), T, "idle"));
-    motion(A, pad([[[0, 0], 5800], [[0, 2], 200], [[0, 0], 250], [[0, 2], 200], [[0, 0], 250], [[0, 1], 200]], T, [0, 0]));
-    motion(B, pad([[[0, 0], 5950], [[0, 2], 200], [[0, 0], 250], [[0, 2], 200], [[0, 0], 250]], T, [0, 0]));
-    // bubbles: A talks 0-2.8 s and 7.4-10 s, B 3-5.8 s and 10-12.6 s; two icons per turn
+    var hopA = hop("laugh"), hopB = hop("laugh");
+    var frA = timeline(T, "idle", [[0, talk(2800, 0)], [4700, [["blink", 140]]], [5850, hopA.map(function (h) { return [h[0], h[2]]; }).concat([["laugh", 700]])],
+      [7900, talk(2600, 3)], [11300, [["blink", 140]]], [13350, [["blink", 120]]]]);
+    var mvA = timeline(T, [0, 0], [[5850, hopA.map(function (h) { return [[0, h[1]], h[2]]; })]]);
+    var frB = timeline(T, "idle", [[1900, [["blink", 140]]], [3150, [["blink", 120]]], [3300, [["wave", 600]]], [3900, talk(2200, 2)],
+      [6350, hopB.map(function (h) { return [h[0], h[2]]; }).concat([["laugh", 600]])], [8600, [["blink", 140]]], [10850, [["blink", 140]]], [11000, talk(2600, 5)]]);
+    var mvB = timeline(T, [0, 0], [[1300, [[[0, -1], 160]]], [6350, hopB.map(function (h) { return [[0, h[1]], h[2]]; })], [9600, [[[0, -1], 160]]]]);
+    frames(A, frA); motion(A, mvA); frames(B, frB); motion(B, mvB);
+    // bubbles follow the lines; two icons per turn, each shown >= 1.3 s
     var bw = 22, bh = 20;
     var bA = bubble(sc, 52 + 6, 5 + 44, bw, bh), bB = bubble(sc, 110 - bw - 6, 5 + 44, bw, bh, true);   // above the heads (~43 px tall)
-    fade(bA, [[1, 2800], [0, 4600], [1, 2600], [0, 4000]]);
-    fade(bB, [[0, 3000], [1, 2800], [0, 4200], [1, 2600], [0, 1400]]);
-    var icA = [["house", 0, 1400], ["coin", 1400, 1400], ["coffee", 7400, 1300], ["fish", 8700, 1300]];
-    var icB = [["tree", 3000, 1400], ["heart", 4400, 1400], ["star", 10000, 1300], ["train", 11300, 1300]];
+    fade(bA, [[1, 2800], [0, 5100], [1, 2600], [0, 3500]]);
+    fade(bB, [[0, 3300], [1, 2800], [0, 4900], [1, 2600], [0, 400]]);
+    var icA = [["house", 0, 1400], ["coin", 1400, 1400], ["coffee", 7900, 1300], ["fish", 9200, 1300]];
+    var icB = [["tree", 3300, 1400], ["heart", 4700, 1400], ["star", 11000, 1300], ["train", 12300, 1300]];
     [[bA, icA], [bB, icB]].forEach(function (p) {
       p[1].forEach(function (ic) {
         var s = iconIn(p[0], ic[0], bw, bh); if (!s) return;
@@ -179,37 +224,43 @@
         if ((pick === "kit" || pick === "people") && !done.roads) { done.roads = 1; sc.classList.add("st-roads"); }
         key = pick;
       }
+      // work loops have uneven timing (long wind-up, short strike, hold); idle residents live on their own blink loops
+      var DIG = [["shovelUp", 460], ["shovelDown", 80], ["shovelDown", 300], ["idle", 240], ["shovelUp", 520], ["shovelDown", 80], ["shovelDown", 260], ["idle", 300]];
+      var PAINT = [["paint1", 380], ["paint2", 340], ["paint1", 420], ["paint2", 360], ["paint1", 400], ["paint2", 320]];
+      var PAVE = [["idle", 300], ["crouch", 650], ["idle", 520], ["idle", 260], ["crouch", 700], ["idle", 480]];
       switch (key) {
         case "coast": case "smooth":
-          frames(Wm, loop("paint1", "paint2", 320, 2560)); idleBlink(Bd, T, 900); idleBlink(By, T, 1700);
+          frames(Wm, PAINT); idleLife(Bd, 8900, 11); idleLife(By, 10700, 12); still(By);
           if (!done.coast) { done.coast = 1; sc.classList.add("st-coast"); }
           break;
         case "relief":
-          frames(Bd, loop("shovelUp", "shovelDown", 380, 3040)); frames(Wm, pad([["wave", 600]], T, "idle")); idleBlink(By, T, 1200);
+          frames(Bd, DIG); frames(Wm, timeline(7300, "idle", [[200, [["wave", 380], ["idle", 300], ["wave", 380]]], [2600, [["blink", 140]]], [5900, [["blink", 140]]]]));
+          idleLife(By, 10700, 13); still(By);
           if (dirt) dirt.el.style.opacity = 1;
           if (!done.relief) { done.relief = 1; sc.classList.add("st-relief"); }
           break;
         case "roads":
-          frames(By, loop("crouch", "idle", 460, 3680)); idleBlink(Wm, T, 700); frames(Bd, loop("shovelUp", "shovelDown", 380, 3040));
+          frames(By, PAVE); still(By); idleLife(Wm, 7300, 14); frames(Bd, DIG);
           if (stones) stones.el.style.opacity = 1;
           if (dirt) dirt.el.style.opacity = 0;
           if (!done.roads) { done.roads = 1; sc.classList.add("st-roads"); }
           break;
         case "kit": case "workers":
           if (crate) crate.el.style.opacity = 1;
-          frames(Bd, pad([["carry", 1600], ["idle", 400], ["blink", 140]], T, "idle"));
-          frames(By, loop("jump", "idle", 300, T)); motion(By, loop([0, 2], [0, 0], 300, T));
-          frames(Wm, pad(talk(1400, 1), T, "idle"));
+          frames(Bd, timeline(8900, "carry", [[2100, [["idle", 500], ["blink", 140], ["idle", 900]]], [6400, [["idle", 400], ["blink", 140], ["idle", 600]]]]));
+          cheer(By, [380, 620, 450]);
+          frames(Wm, timeline(7300, "idle", [[300, talk(1600, 1)], [2600, [["blink", 140]]], [4100, talk(1400, 4)], [6200, [["blink", 140]]]]));
           sc.classList.add("st-kit");
           break;
         case "people":
           sc.classList.remove("st-kit"); sc.classList.add("st-people");
           [crate, stones, dirt].forEach(function (x) { if (x) x.el.style.opacity = 0; });
-          frames(Wm, loop("wave", "idle", 360, 2880)); frames(Bd, pad([["laugh", 900], ["idle", 300], ["wave", 1200]], T, "idle"));
-          frames(By, loop("jump", "laugh", 300, T)); motion(By, loop([0, 2], [0, 0], 300, T));
+          frames(Wm, timeline(7300, "idle", [[0, [["wave", 380], ["idle", 320], ["wave", 380], ["idle", 300], ["wave", 400]]], [3400, [["blink", 140]]], [5200, [["laugh", 900]]]]));
+          frames(Bd, timeline(8900, "idle", [[400, [["laugh", 900]]], [1700, [["blink", 140]]], [2600, [["wave", 380], ["idle", 300], ["wave", 380]]], [6200, [["blink", 140]]]]));
+          cheer(By, [300, 520, 380, 700]);
           break;
         default:                                // unknown step (e.g. a backend fetch): everyone busy
-          frames(Wm, loop("paint1", "paint2", 320, 2560)); frames(Bd, loop("shovelUp", "shovelDown", 380, 3040)); frames(By, loop("crouch", "idle", 460, 3680));
+          frames(Wm, PAINT); frames(Bd, DIG); frames(By, PAVE); still(By);
       }
     }
     job("coast");
@@ -239,8 +290,9 @@
     var who = has("boy") ? "boy" : "woman";
     var P = sprite(sc, who, 76, 5, who === "boy");   // walk to the right: the boy is drawn facing left
     if (!P) return V.dots(sc);
-    frames(P, [["walkA", 160], ["idle", 160], ["walkB", 160], ["idle", 160]]);
-    motion(P, [[[0, 0], 160], [[0, 1], 160], [[0, 0], 160], [[0, 1], 160]]);
+    // 30 art px/s ground (33.3 ms per px = 2 frames at 60 Hz) and 170 ms frames: 10.2 px per step = the boy's stride
+    frames(P, [["walkA", 170], ["idle", 170], ["walkB", 170], ["idle", 170]]);
+    motion(P, [[[0, 0], 170], [[0, 1], 170], [[0, 0], 170], [[0, 1], 170]]);
     var ORDER = ["sea", "mount", "road", "hills", "city"];
     function stage(key, i, n) {             // unknown steps (a backend boot): scenery follows the progress fraction
       var cur = BIOME[key] || (n ? ORDER[Math.min(ORDER.length - 1, Math.floor((i + 1) / n * ORDER.length - 1e-9))] : "hills");
@@ -250,24 +302,25 @@
     return { stage: stage };
   };
 
-  // a parade of residents crossing the street, one after another; the old man reads his paper on the go
+  // residents cross the street at 20 art px/s (50 ms per px = 3 frames at 60 Hz). Each walker's frame time comes from
+  // its own stride (speed = stride x steps/s, so feet don't slide); lanes start at uneven offsets (no conveyor belt);
+  // the old man has no walk frames, so he doesn't glide past: he stands by the bench reading
   V.parade = function (sc) {
     stars(sc, 8);
     ground(sc, "walk");
     [["lamp", 22], ["bench", 70], ["birch", 132]].forEach(function (p) { if (has(p[0])) sprite(sc, p[0], p[1], 5); });
-    var who = [["woman", false, "walk"], ["oldman", false, "read"], ["builder", false, "walk"], ["boy", true, "walk"]];
+    var reader = sprite(sc, "oldman", 58, 5);
+    if (reader) idleLife(reader, 9700, 31, "read");
+    var SPEED = 20, STRIDE = { woman: 9.25, builder: 10, boy: 10.25 };   // stride: art px per step, measured on the frames
+    var who = [["woman", false, 0], ["builder", false, -4.6], ["boy", true, -8.3]];
     var n = 0;
     who.forEach(function (w, k) {
       if (!has(w[0])) return;
-      var lane = el("div", "lwalker", sc, "--d:" + (-k * 2.7).toFixed(1) + "s;--rx:" + (24 + k * 40));
+      var lane = el("div", "lwalker", sc, "--d:" + w[2] + "s;--rx:" + (100 + k * 26));
       var s = sprite(lane, w[0], 0, 5, w[1]);
-      if (w[2] === "walk") {
-        frames(s, [["walkA", 170], ["idle", 170], ["walkB", 170], ["idle", 170]]);
-        motion(s, [[[0, 0], 170], [[0, 1], 170], [[0, 0], 170], [[0, 1], 170]]);
-      } else {
-        frames(s, pad([["read", 2400], ["blink", 140]], 2800, "read"));
-        motion(s, [[[0, 0], 240], [[0, 1], 240]]);
-      }
+      var ms = Math.round(STRIDE[w[0]] / (2 * SPEED) * 1000);             // two frames per step
+      frames(s, [["walkA", ms], ["idle", ms], ["walkB", ms], ["idle", ms]]);
+      motion(s, [[[0, 0], ms], [[0, 1], ms], [[0, 0], ms], [[0, 1], ms]]);
       n++;
     });
     if (!n) return V.dots(sc);
@@ -282,7 +335,7 @@
     var FR = { coast: "coast", smooth: "smooth", relief: "relief", roads: "roads", kit: "roads", workers: "roads", people: "idle" };
     var I = sprite(sc, "island", W / 2, 1);   // characters (the island is one) are placed by their centre
     var A = sprite(sc, "woman", 16, 3), B = sprite(sc, "boy", W - 16, 3);
-    if (A) idleBlink(A, 3000, 1200); if (B) idleBlink(B, 3400, 2200);
+    if (A) idleLife(A, 7300, 21); if (B) idleLife(B, 8900, 22);
     var cur = null;
     var LAYERS = ["coast", "smooth", "relief", "roads", "idle"];
     function stage(key, i, n) {             // unknown steps (a backend boot): the island grows with the progress fraction
@@ -293,7 +346,10 @@
         motion(I, [[[0, 1], 120], [[0, 0], 1]], 1);
         cur = f;
       }
-      if (key === "people") { if (A) frames(A, loop("wave", "idle", 360, 2880)); if (B) { frames(B, loop("jump", "idle", 300, 2400)); motion(B, loop([0, 2], [0, 0], 300, 2400)); } }
+      if (key === "people") {
+        if (A) frames(A, timeline(7300, "idle", [[0, [["wave", 380], ["idle", 320], ["wave", 380], ["idle", 300], ["wave", 400]]], [3200, [["blink", 140]]], [4800, [["laugh", 900]]]]));
+        if (B) cheer(B, [320, 560, 400, 680]);
+      }
     }
     frames(I, [["sea", 1]], 1); cur = "sea";
     stage("coast");

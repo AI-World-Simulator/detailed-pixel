@@ -9,14 +9,23 @@
   python anim.py cut IMG OUTDIR [--names a,b,c] [--colors 16] [--min 6]
       sheet of separate objects -> one low-res RGBA sprite per object (own grid phase, period near the sheet's)
   python anim.py char SPEC.json OUTDIR
-      character frames -> OUTDIR/<name>/<frame>.png (low-res RGBA, shared palette, shared canvas, registered)
-      SPEC: {"name": "woman", "colors": 24, "base": "base.png",
-             "frames": {"wave": "wave.png", "blink": {"src": "blink.png", "keep": [x0, y0, x1, y1]}},
-             "mirror": false}
-      "keep" = cells [x0, y0, x1, y1] (base grid) taken from this frame, everything else is copied from the base,
-      so a local edit (eyes, mouth) cannot drift elsewhere; "local": true finds that box itself (changed cells in the
-      upper half of the body); "mask": "m.png" uses a foreground mask (BiRefNet, cgen kind "bgmask") instead of the
-      colour-based background removal, for light objects such as a newspaper.
+      character frames -> OUTDIR/<name>/<frame>.png + meta.json + qa.json, OUTDIR/_<name>_preview.png (ground/neck lines)
+      SPEC: {"name": "woman", "colors": 28, "period": 12.28, "base": "base.png",
+             "frames": {"wave": "wave.png", "blink": {"src": "blink.png", "local": "eyes"},
+                        "read": {"src": "read.png", "mask": "m_read.png"}, "hop": {"src": "hop.png", "air": true}}}
+      People (default; rules in docs/character-animation.md):
+        - every frame is cut on the base frame's cell lattice shifted by the head drift (phase correlation), so
+          features of ~1.5 cells (eyes) round the same way in every frame;
+        - one palette from the base frame, near-twin colours merged, a few slots for colours only new objects bring;
+        - frames stand on the base ground line: the lowest row of shoe colours (not colour-overlap registration,
+          which glues the head and lifts a crouching body); "air": true keeps the model's lift;
+        - pose frames get the base head pasted (rises at most 1 px; objects in front of the face are kept);
+          "local": "eyes" | "mouth" | true takes only that changed part of the face from the edit;
+        - missing outer outline closed, lone pixels dropped; a "squash" frame is derived from idle (one shin row out),
+          "squash_from": ["laugh"] adds squash_<frame> keeping that expression;
+        - qa.json per frame: contact (0 = on the ground), face_diff, area, outline share, lonely pixels, offsets.
+      "kind": "terrain" (e.g. the island layers) keeps the older colour-registration path; "base_mask"/"match_colors"
+      apply there; "mask": "m.png" (BiRefNet, cgen kind "bgmask") is joined with the colour-based foreground.
 Background = median border colour; it and the soft grey ground shadow are removed by a flood fill from the border
 that cannot cross the dark outline, plus enclosed holes of exactly the background colour."""
 import sys, os, json
@@ -210,15 +219,21 @@ def rgba(rgb, a):
     return Image.fromarray(np.dstack([rgb.astype(np.uint8), (a * 255).astype(np.uint8)]), "RGBA")
 
 
-def preview(imgs, labels, path, scale=6, bg=(52, 64, 84)):
+def preview(imgs, labels, path, scale=6, bg=(52, 64, 84), ground=None, neck=None):
+    """Frames side by side; optional guide lines: ground (green, under the base contact row) and neck (blue)."""
     from PIL import ImageDraw
     w = max(i.width for i in imgs) * scale; h = max(i.height for i in imgs) * scale
     sheet = Image.new("RGB", ((w + 12) * len(imgs) + 12, h + 40), bg)
     d = ImageDraw.Draw(sheet)
     for k, (im, lb) in enumerate(zip(imgs, labels)):
+        x = 12 + k * (w + 12)
+        if ground is not None:
+            d.line([(x, 30 + (ground + 1) * scale), (x + w, 30 + (ground + 1) * scale)], fill=(80, 200, 120), width=1)
+        if neck is not None:
+            d.line([(x, 30 + neck * scale), (x + w, 30 + neck * scale)], fill=(90, 130, 220), width=1)
         big = im.resize((im.width * scale, im.height * scale), Image.NEAREST)
-        sheet.paste(big, (12 + k * (w + 12), 30), big)
-        d.text((12 + k * (w + 12), 8), lb, fill=(230, 230, 230))
+        sheet.paste(big, (x, 30), big)
+        d.text((x, 8), lb, fill=(230, 230, 230))
     sheet.save(path)
 
 
@@ -295,8 +310,7 @@ def fsrc_mask(fsrc):
     return isinstance(fsrc, dict) and bool(fsrc.get("mask"))
 
 
-def cmd_char(spec_path, outdir):
-    spec = json.load(open(spec_path))
+def cmd_char_terrain(spec, spec_path, outdir):
     root = os.path.dirname(os.path.abspath(spec_path))
     P = lambda s: s if os.path.isabs(s) else os.path.join(root, s)
     name = spec["name"]
@@ -389,6 +403,283 @@ def cmd_char(spec_path, outdir):
     json.dump(meta, open(os.path.join(d, "meta.json"), "w"), indent=1)
     preview(imgs, names, os.path.join(outdir, f"_{name}_preview.png"))
     print(f"{name}: {meta['w']}x{meta['h']} cells, period {p:.2f}px, frames {names}")
+
+# ---------------------------------------------------------------- people: frames as data around one base pose
+# Rules (docs/character-animation.md): every frame is cut on the base frame's lattice shifted by the head drift, one
+# palette built from the base, frames stand on the base ground line (shoe row), the head is data pasted from the base.
+
+def base_lattice(a, p, fx, fy):
+    """Cell origins exactly as sample() picks them: cell (j, i) means the same place in every frame."""
+    H, W = a.shape[:2]
+    xs = np.arange(fx - p, W, p); ys = np.arange(fy - p, H, p)
+    return (xs[(xs + p * 0.25 >= 0) & (xs + p * 0.75 <= W)], ys[(ys + p * 0.25 >= 0) & (ys + p * 0.75 <= H)])
+
+
+def sample_at(a, xs, ys, p):
+    """sample() on a given (possibly shifted) lattice; cells are clipped to the image."""
+    H, W = a.shape[:2]; q = p * 0.25
+    out = np.zeros((len(ys), len(xs), 3), np.float32)
+    for j, y in enumerate(ys):
+        ya = min(max(int(round(y + q)), 0), H - 1); yb = min(max(int(round(y + p - q)), ya + 1), H)
+        for i, x in enumerate(xs):
+            xa = min(max(int(round(x + q)), 0), W - 1); xb = min(max(int(round(x + p - q)), xa + 1), W)
+            out[j, i] = np.median(a[ya:yb, xa:xb].reshape(-1, 3), axis=0)
+    return out
+
+
+def drift(base, img, box, limit):
+    """Integer move (dy, dx) in render px of img against base inside box (x0, y0, x1, y1): windowed phase correlation."""
+    x0, y0, x1, y1 = box
+    win = np.outer(np.hanning(y1 - y0), np.hanning(x1 - x0))
+    A = (base[y0:y1, x0:x1].mean(axis=2) - base[y0:y1, x0:x1].mean()) * win
+    B = (img[y0:y1, x0:x1].mean(axis=2) - img[y0:y1, x0:x1].mean()) * win
+    R = np.fft.fft2(B) * np.conj(np.fft.fft2(A))
+    r = np.real(np.fft.ifft2(R / (np.abs(R) + 1e-9)))
+    dy, dx = np.unravel_index(np.argmax(r), r.shape); h, w = r.shape
+    dy, dx = int(dy - h if dy > h // 2 else dy), int(dx - w if dx > w // 2 else dx)
+    return (dy, dx) if abs(dy) <= limit and abs(dx) <= limit else (0, 0)
+
+
+def ckey(rgb):
+    rgb = rgb.astype(np.int64)
+    return (rgb[..., 0] << 16) | (rgb[..., 1] << 8) | rgb[..., 2]
+
+
+def lum(rgb):
+    return rgb.astype(np.float32).mean(axis=-1)
+
+
+def neck_row(a):
+    """Narrowest silhouette row between 20 % and 55 % of the height: the line between head and shoulders."""
+    ys = np.where(a.any(axis=1))[0]; top, h = ys.min(), ys.max() - ys.min()
+    w = a.sum(axis=1); lo, hi = top + int(0.2 * h), top + int(0.55 * h)
+    return int(lo + np.argmin(w[lo:hi]))
+
+
+def palette_from(base_rgb, base_a, others, k=28, merge=12, extra=8, far=36):
+    """Palette = base colours (median cut) with near-twins merged (L1 <= merge), plus a few slots for colours that only
+    new objects bring (brush, shovel, crate, paper)."""
+    def mc(px, n):
+        im = Image.fromarray(px.astype(np.uint8).reshape(1, -1, 3), "RGB").quantize(colors=n, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+        pal = np.array(im.getpalette()[:768]).reshape(-1, 3)
+        return [pal[i].astype(int) for _, i in sorted(im.getcolors(256), reverse=True)]
+    cols = []
+    def add(c):
+        if all(np.abs(c - d).sum() > merge for d in cols):
+            cols.append(c)
+    for c in mc(base_rgb[base_a], k):
+        add(c)
+    base_n = len(cols)
+    pool = []
+    for rgb, a in others:
+        v = rgb[a].astype(int)
+        if len(v):
+            dmin = np.abs(v[:, None, :] - np.array(cols)[None]).sum(axis=2).min(axis=1)
+            pool.append(v[dmin > far])
+    pool = np.concatenate(pool) if pool else np.zeros((0, 3), int)
+    if len(pool) >= 6:
+        for c in mc(pool, extra):
+            add(c)
+    return np.array(cols, dtype=np.uint8), base_n
+
+
+def map_to(rgb, pal):
+    d = np.abs(rgb[..., None, :].astype(np.int32) - pal[None, None].astype(np.int32)).sum(axis=-1)
+    return pal[d.argmin(axis=-1)]
+
+
+def shoe_keys(rgb, a, rows=3):
+    """Colours of the shoes: the base pose's bottom rows without the dark outline."""
+    y1 = int(np.where(a.any(axis=1))[0].max()); band = slice(y1 - rows + 1, y1 + 1)
+    sel = a[band] & (lum(rgb[band]) > 40)
+    return np.unique(ckey(rgb[band])[sel])
+
+
+def contact_row(rgb, a, keys):
+    rows = np.where((a & np.isin(ckey(rgb), keys)).sum(axis=1) >= 2)[0]
+    return int(rows.max()) if len(rows) else int(np.where(a.any(axis=1))[0].max())
+
+
+def head_lock(rgb, a, qbase, abase, neck, prior_dy, r=2):
+    """Paste the base head (everything above the neck row) at the best integer offset near prior_dy. A foreign object in
+    front of the face (brush, paper, a sleeve in a non-head colour) is kept; leftover hair/outline of the frame's own
+    head just outside the pasted silhouette is cleared. Returns (rgb, a, (dy, dx), mismatch before the paste)."""
+    head = abase.copy(); head[neck:] = False
+    hy, hx = np.where(head)
+    H, W = abase.shape
+    best = None
+    for dy in range(max(prior_dy - r, -1), max(prior_dy + r, -1) + 1):   # rises at most 1 px: the figure keeps its height
+        for dx in range(-r, r + 1):
+            y2, x2 = hy + dy, hx + dx
+            ok = (y2 >= 0) & (y2 < H) & (x2 >= 0) & (x2 < W)
+            good = (a[y2[ok], x2[ok]] & (np.abs(rgb[y2[ok], x2[ok]].astype(int) - qbase[hy[ok], hx[ok]].astype(int)).sum(axis=1) <= 24)).sum()
+            if best is None or good > best[0]:
+                best = (good, dy, dx)
+    good, dy, dx = best
+    mis = 1 - good / max(1, len(hy))
+    rgb, a = rgb.copy(), a.copy()
+    head_keys = np.unique(ckey(qbase[head]))
+    body_keys = np.unique(ckey(qbase[abase & ~head]))
+    hair_keys = np.setdiff1d(head_keys, body_keys)              # colours only the head has (hair, eyes)
+    dark = lum(rgb) < 40
+    # clear the frame's own head leftovers around the pasted silhouette (rows above the pasted neck only)
+    pasted = np.zeros_like(abase); y2, x2 = hy + dy, hx + dx
+    ok = (y2 >= 0) & (y2 < H) & (x2 >= 0) & (x2 < W); pasted[y2[ok], x2[ok]] = True
+    ring = nd.binary_dilation(pasted, iterations=2) & ~pasted
+    ring[max(0, neck + dy):] = False
+    stray = ring & a & (np.isin(ckey(rgb), hair_keys) | dark)
+    a[stray] = False
+    # paste, keeping foreign objects in front of the face
+    ty, tx, sy, sx = y2[ok], x2[ok], hy[ok], hx[ok]
+    front = a[ty, tx] & ~np.isin(ckey(rgb[ty, tx]), head_keys) & (lum(rgb[ty, tx]) >= 40)
+    rgb[ty[~front], tx[~front]] = qbase[sy[~front], sx[~front]]
+    a[ty[~front], tx[~front]] = True
+    return rgb, a, (dy, dx), float(mis)
+
+
+def outline_fix(rgb, a, ink):
+    """Close the 1-px outer outline: where an edge cell is not dark, its empty 4-neighbours become outline (ink)."""
+    k = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], bool)
+    edge = a & nd.binary_dilation(~a, structure=k)
+    open_ = edge & (lum(rgb) >= 60)
+    add = nd.binary_dilation(open_, structure=k) & ~a
+    rgb, a = rgb.copy(), a.copy()
+    rgb[add] = ink; a[add] = True
+    return rgb, a
+
+
+def despeck(rgb, a):
+    """Drop opaque cells with no opaque 4-neighbour."""
+    k = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
+    n = nd.convolve(a.astype(int), k, mode="constant")
+    return a & (n > 0)
+
+
+def squash_of(rgb, a, contact):
+    """Landing/anticipation squash without scaling: drop one row at shin height, the body above comes down a pixel."""
+    ys = np.where(a.any(axis=1))[0]; h = contact - ys.min()
+    knee = contact - max(3, int(round(0.13 * h)))
+    r2, a2 = rgb.copy(), a.copy()
+    r2[1:knee + 1] = rgb[0:knee]; a2[1:knee + 1] = a[0:knee]; a2[0] = False
+    return r2, a2
+
+
+def qa_frame(rgb, a, qbase, abase, keys, base_contact, neck, air=False, off=(0, 0)):
+    head = abase.copy(); head[neck:] = False
+    core = head & nd.binary_erosion(abase, iterations=2)
+    sr, sa = shift(rgb, -off[0], -off[1]), shift(a, -off[0], -off[1], False)      # look at the face where it was pasted
+    face_diff = float(((np.abs(sr.astype(int) - qbase.astype(int)).sum(axis=2) > 24) | ~sa)[core].mean()) if core.any() else 0.0
+    edge = a & nd.binary_dilation(~a)
+    k = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
+    lone = a & (nd.convolve(a.astype(int), k, mode="constant") <= 1)
+    return {"contact": int(contact_row(rgb, a, keys) - base_contact), "air": bool(air),
+            "face_diff": round(face_diff, 3), "area": round(float(a.sum()) / max(1, abase.sum()), 3),
+            "outline": round(float((lum(rgb)[edge] < 60).mean()) if edge.any() else 1.0, 3),
+            "lonely": int(lone.sum())}
+
+
+def cmd_char_person(spec, spec_path, outdir):
+    root = os.path.dirname(os.path.abspath(spec_path))
+    P = lambda s: s if os.path.isabs(s) else os.path.join(root, s)
+    name = spec["name"]
+    base_img = load_rgb(P(spec["base"]))
+    p, fx, fy = grid(base_img, spec.get("period"))
+    xs, ys = base_lattice(base_img, p, fx, fy)
+    base_lo = sample_at(base_img, xs, ys, p)
+    base_fg, bg = remove_bg(base_lo)
+    neck = neck_row(base_fg)
+    hy, hx = np.where(base_fg[:neck])
+    box = (max(0, int(xs[hx.min()] - p)), max(0, int(ys[hy.min()] - p)),
+           min(base_img.shape[1], int(xs[hx.max()] + 2 * p)), min(base_img.shape[0], int(ys[neck] + p)))
+    raw = {"idle": (base_lo, base_fg, {})}
+    for fn, fsrc in spec.get("frames", {}).items():
+        f = {"src": fsrc} if isinstance(fsrc, str) else dict(fsrc)
+        img = load_rgb(P(f["src"]))
+        dy, dx = drift(base_img, img, box, limit=4 * p)
+        lo = sample_at(img, xs + dx, ys + dy, p)
+        fg = remove_bg(lo)[0]
+        if f.get("mask"):
+            m = np.asarray(Image.open(P(f["mask"])).convert("L").resize((img.shape[1], img.shape[0]))).astype(np.float32)
+            fg = fg | (sample_at(np.dstack([m] * 3), xs + dx, ys + dy, p)[..., 0] > 127)
+        f["drift"] = (dy, dx)
+        raw[fn] = (lo, fg, f)
+    pal, base_n = palette_from(base_lo, base_fg, [(v[0], v[1]) for k, v in raw.items() if k != "idle"], k=spec.get("colors", 28))
+    ink = pal[int(np.argmin(lum(pal)))]
+    qbase, abase = map_to(base_lo, pal), base_fg
+    keys = shoe_keys(qbase, abase)
+    base_contact = contact_row(qbase, abase, keys)
+    neck = neck_row(abase)
+    qbase, abase = outline_fix(qbase, abase, ink)
+    out, qa = {"idle": (qbase, abase)}, {}
+    for fn, (lo, fg, f) in raw.items():
+        if fn == "idle":
+            continue
+        rgb, a = map_to(lo, pal), fg
+        dyg = 0 if f.get("air") else base_contact - contact_row(rgb, a, keys)
+        rgb, a = shift(rgb, dyg, 0), shift(a, dyg, 0, False)
+        loc = f.get("local")
+        if loc:                                      # face-only edit: only the changed eye/mouth band comes from the edit
+            ys_, _ = np.where(abase); mid = ys_.min() + (ys_.max() - ys_.min()) // 2
+            diff = (a | abase) & ((a ^ abase) | (np.abs(rgb.astype(int) - qbase.astype(int)).sum(axis=2) > 24))
+            diff[mid:] = False
+            if loc in ("eyes", "mouth"):
+                strong = diff & (np.abs(rgb.astype(int) - qbase.astype(int)).sum(axis=2) > 60)
+                cnt = strong.sum(axis=1); rows = np.where(cnt >= 2)[0]
+                if len(rows):
+                    runs = np.split(rows, np.where(np.diff(rows) > 1)[0] + 1)
+                    tot = [int(cnt[r].sum()) for r in runs]
+                    pick = runs[int(np.argmax(tot))] if loc == "eyes" else ([r for r, t in zip(runs, tot) if t >= 4] or runs)[-1]
+                    band = np.zeros(len(diff), bool); band[pick.min():pick.max() + 1] = True
+                    diff &= band[:, None]
+            dy_, dx_ = np.where(diff)
+            m = np.zeros_like(abase)
+            if len(dy_):
+                m[max(0, dy_.min() - 1):dy_.max() + 2, max(0, dx_.min() - 1):dx_.max() + 2] = True
+                m &= nd.binary_erosion(abase, iterations=2)          # inside the face only: ears, hair and outline stay
+            rgb = np.where(m[..., None], rgb, qbase); a = np.where(m, a, abase)
+            hd, mis = (0, 0), 0.0
+        else:                                        # pose: the head is data from the base frame
+            rgb, a, hd, mis = head_lock(rgb, a, qbase, abase, neck, dyg)
+            rgb, a = outline_fix(rgb, a, ink)
+        a = despeck(rgb, a)
+        out[fn] = (rgb, a)
+        qa[fn] = dict(qa_frame(rgb, a, qbase, abase, keys, base_contact, neck, f.get("air"), hd), drift=list(f["drift"]),
+                      ground_shift=int(dyg), head_offset=list(hd), head_mismatch=round(mis, 3))
+    out["squash"] = squash_of(qbase, abase, base_contact)
+    qa["squash"] = dict(qa_frame(*out["squash"], qbase, abase, keys, base_contact, neck, off=(1, 0)), note="derived from idle")
+    for fn in spec.get("squash_from", []):           # squash keeping an expression (a laughing hop must not blink open-eyed)
+        if fn in out:
+            out["squash_" + fn] = squash_of(*out[fn], base_contact)
+            qa["squash_" + fn] = {"contact": int(contact_row(*out["squash_" + fn], keys) - base_contact), "face_diff": 0.0, "note": "derived from " + fn}
+    names = list(out)
+    U = np.zeros_like(abase)
+    for rgb, a in out.values():
+        U |= a
+    ys_, xs_ = np.where(U)
+    y0, y1, x0, x1 = max(0, ys_.min() - 1), ys_.max() + 2, max(0, xs_.min() - 1), xs_.max() + 2
+    d = os.path.join(outdir, name)
+    os.makedirs(d, exist_ok=True)
+    imgs = []
+    for n in names:
+        rgb, a = out[n]
+        im = rgba(rgb[y0:y1, x0:x1], a[y0:y1, x0:x1])
+        im.save(os.path.join(d, n + ".png"))
+        imgs.append(im)
+    cx = int(np.median(np.where(abase)[1]) - x0)
+    meta = {"name": name, "w": int(x1 - x0), "h": int(y1 - y0), "feet": int(base_contact - y0), "cx": cx,
+            "period": round(float(p), 2), "colors": int(len(pal)), "frames": names}
+    json.dump(meta, open(os.path.join(d, "meta.json"), "w"), indent=1)
+    json.dump(qa, open(os.path.join(d, "qa.json"), "w"), indent=1)
+    preview(imgs, names, os.path.join(outdir, f"_{name}_preview.png"), ground=base_contact - y0, neck=neck - y0)
+    bad = {k: v for k, v in qa.items() if (not v.get("air") and v["contact"] != 0) or (v["face_diff"] > 0.02 and k not in ("blink", "talk", "laugh"))}
+    print(f"{name}: {meta['w']}x{meta['h']} cells, {len(pal)} colours, frames {names}" + (f"  QA FLAGS {sorted(bad)}" if bad else "  QA ok"))
+
+
+def cmd_char(spec_path, outdir):
+    spec = json.load(open(spec_path))
+    if spec.get("kind") == "terrain":
+        return cmd_char_terrain(spec, spec_path, outdir)
+    return cmd_char_person(spec, spec_path, outdir)
 
 
 if __name__ == "__main__":
