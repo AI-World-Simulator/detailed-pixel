@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Анимация иллюстрированного жителя</title>
+<style>
+  :root {
+    --bg: #f3efe7; --panel: #fffdf8; --ink: #2b2723; --muted: #6d655c; --line: #ddd5c8; --ground: #cfc4b2;
+    --accent: #b5642b; --good: #2f7d4f; --bad: #a3392f; --stage: #ece6da; --stage2: #e3dccd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1d1b19; --panel: #262320; --ink: #ece6dc; --muted: #a59c90; --line: #3a3530; --ground: #5a5248;
+      --accent: #e08b4f; --good: #6cc08f; --bad: #e57c6f; --stage: #2e2a26; --stage2: #35302b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1d1b19; --panel: #262320; --ink: #ece6dc; --muted: #a59c90; --line: #3a3530; --ground: #5a5248;
+    --accent: #e08b4f; --good: #6cc08f; --bad: #e57c6f; --stage: #2e2a26; --stage2: #35302b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  h2 { font-size: 17px; margin: 28px 0 10px; }
+  p { margin: 0 0 8px; }
+  .lead { color: var(--muted); max-width: 820px; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.grid { border-collapse: separate; border-spacing: 8px; margin: 0 -8px; }
+  .grid th { font-weight: 600; text-align: left; vertical-align: bottom; padding: 0 2px; font-size: 13px; }
+  .grid th small { display: block; font-weight: 400; color: var(--muted); }
+  .grid td.row { font-weight: 600; font-size: 13px; vertical-align: middle; width: 96px; }
+  .grid td.row small { display: block; font-weight: 400; color: var(--muted); }
+  .cell { position: relative; background: linear-gradient(var(--stage), var(--stage2)); border: 1px solid var(--line);
+          border-radius: 10px; overflow: hidden; }
+  .cell .note { position: absolute; inset: auto 6px 6px 6px; font-size: 11px; line-height: 1.3; color: var(--muted);
+                background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; opacity: .94; }
+  .cell.empty { display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted);
+                font-size: 12px; padding: 10px; }
+  .floor { position: absolute; left: 0; right: 0; height: 1px; background: var(--ground); }
+  .shadow { position: absolute; height: 10px; border-radius: 50%; background: rgba(60, 45, 30, .16); transform: translate(-50%, -50%); }
+  .dash { position: absolute; left: -40px; right: -40px; height: 3px;
+          background: repeating-linear-gradient(90deg, var(--ground) 0 14px, transparent 14px 40px); }
+  .chr { position: absolute; left: 0; top: 0; }
+  .win { position: absolute; overflow: hidden; }
+  .win > img { position: absolute; left: 0; top: 0; height: 100%; max-width: none; will-change: transform; }
+  .part { position: absolute; max-width: none; }
+  .wrap { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .badge { position: absolute; left: 6px; top: 6px; font-size: 10px; padding: 1px 6px; border-radius: 9px;
+           background: var(--panel); color: var(--muted); border: 1px solid var(--line); }
+  .map { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .map figure { margin: 0; display: flex; flex-direction: column; align-items: center; }
+  .map figcaption { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+  .tile { position: relative; width: 150px; height: 110px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line);
+          background: radial-gradient(circle at 30% 20%, #a9c48a, #8fae73 60%, #7f9d66); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; font-size: 13px; }
+  .card dt { color: var(--muted); }
+  .card dd { margin: 0; }
+  .card ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+  .pro { color: var(--good); } .con { color: var(--bad); }
+  table.m { border-collapse: collapse; font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); }
+  table.m th, table.m td { padding: 5px 9px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  table.m th:first-child, table.m td:first-child { text-align: left; }
+  .rec { background: var(--panel); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 0 10px 10px 0; }
+  .rec li { margin-bottom: 4px; }
+  @media (prefers-reduced-motion: reduce) { .moving { animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Анимация иллюстрированного жителя: три подхода</h1>
+  <p class="lead">Один и тот же житель (Z-Image-Turbo, сид 11), всё локально на M3 Max через ComfyUI.
+    <b>A</b> — покадровые правки Qwen-Image 2.1 от базы: сырые (только альфа BiRefNet) и основной вариант — у каждого кадра своя
+    голова и мимика, исправлено только то, что читается как ошибка (рост фигуры, линия земли, скольжение ног, дрейф тона).
+    <b>A′</b> — прежнее правило «голова из базы»: лицо заморожено, оставлено для сравнения.
+    <b>B</b> — кукла из одного рисунка: части выделены автоматически, движение — CSS-трансформации.
+    <b>C</b> — image-to-video Wan 2.2 TI2V-5B. Тайминги неровные (моргания 2–6 с, взмахи рта 110–190 мс), петли разной длины.
+    Тонкая линия — линия земли базового кадра.</p>
+
+  <div class="scroll"><table class="grid" id="grid"></table></div>
+
+  <h2>Портрет для карточки</h2>
+  <p class="lead">Голова и плечи крупнее (1,2 от рендера). Разговор с паузами-словами и морганиями.</p>
+  <div class="map" id="portrait"></div>
+
+  <h2>Масштаб карты</h2>
+  <p class="lead">Те же ассеты, уменьшенные заранее (персонаж ~75 px по высоте). Здесь видно, что из деталей вообще читается.</p>
+  <div class="map" id="map"></div>
+
+  <h2>Подходы</h2>
+  <div class="cards" id="cards"></div>
+
+  <h2>Замеры</h2>
+  <div class="scroll" id="metrics"></div>
+
+  <h2>Рекомендация</h2>
+  <div class="rec" id="rec"></div>
+</main>
+<script src="assets/manifest.js"></script>
+<script src="assets/notes.js"></script>
+<script>
+(function () {
+  "use strict";
+  var M = window.MANIFEST, N = window.NOTES || {};
+  var sheet = document.createElement("style");
+  document.head.appendChild(sheet);
+  var kfId = 0;
+
+  function rng(seed) { // mulberry32: every character gets its own repeatable random stream
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function between(r, a, b) { return a + (b - a) * r(); }
+
+  // steps: [[cssValue, ms], ...]; stepwise (step-end) or smooth (ease-in-out between values)
+  function animate(el, prop, steps, smooth) {
+    var total = steps.reduce(function (s, x) { return s + x[1]; }, 0), t = 0, name = "k" + (kfId++), css = "";
+    steps.forEach(function (st) {
+      css += (t / total * 100).toFixed(4) + "%{" + prop + ":" + st[0] + "}";
+      t += st[1];
+    });
+    css += "100%{" + prop + ":" + (smooth ? steps[0][0] : steps[steps.length - 1][0]) + "}";
+    sheet.sheet.insertRule("@keyframes " + name + "{" + css + "}", sheet.sheet.cssRules.length);
+    var anim = name + " " + total.toFixed(1) + "ms " + (smooth ? "ease-in-out" : "step-end") + " infinite";
+    el.style.animation = el.style.animation ? el.style.animation + ", " + anim : anim;  // several tracks on one element
+    el.classList.add("moving");
+    return total;
+  }
+
+  // --- choreography generators (rules: docs/character-animation.md)
+  function blinks(r, total) { // [[open 0 | closed 1, ms]]: 2-6 s apart, 120-160 ms closed, ~15 % doubles
+    var out = [], t = 0;
+    while (true) {
+      var gap = between(r, 2000, 6000);
+      if (t + gap + 600 > total) { out.push([0, total - t]); break; }
+      out.push([0, gap]); out.push([1, between(r, 120, 160)]); t += gap + out[out.length - 1][1];
+      if (r() < 0.15) { out.push([0, 110]); out.push([1, 130]); t += 240; }
+    }
+    return out;
+  }
+  function talk(r, total) { // [[0 closed | 1 open | 2 blink, ms]]: flaps 110-190 ms, word pause 250-400 ms, phrase pause
+    var out = [], t = 0;
+    while (t < total - 4000) {
+      var words = 2 + Math.floor(r() * 3);
+      for (var w = 0; w < words; w++) {
+        var flaps = 3 + Math.floor(r() * 4);
+        for (var f = 0; f < flaps; f++) {
+          var o = between(r, 110, 190), c = between(r, 70, 130);
+          out.push([1, o]); out.push([0, c]); t += o + c;
+        }
+        var p = between(r, 250, 400); out.push([0, p]); t += p;
+      }
+      var pause = between(r, 900, 1700), b = between(r, 250, 500);
+      out.push([0, b]); out.push([2, 140]); out.push([0, pause - b]); t += pause + 140;
+    }
+    out.push([0, Math.max(300, total - t)]);
+    return out;
+  }
+
+  function el(tag, cls, parent) { var e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; }
+  function px(v) { return v + "px"; }
+
+  // frame strip in a window; returns {win, img, n, set(idx)}
+  function strip(parent, key, size, x, y) {
+    var s = M.strips[key + "_" + size], d = size === "L" ? 2 : 2;
+    var win = el("div", "win", parent);
+    win.style.width = px(s.w / d); win.style.height = px(s.h / d); win.style.left = px(x || 0); win.style.top = px(y || 0);
+    var img = el("img", "", win);
+    img.src = "assets/" + key + "_" + size + ".webp"; img.alt = "";
+    return { win: win, img: img, n: s.n };
+  }
+  function frameSteps(n, seq) { return seq.map(function (x) { return ["translateX(" + (-x[0] / n * 100).toFixed(5) + "%)", x[1]]; }); }
+
+  function stage(parent, size, opts) {
+    var c = M["canvas_" + size], d = 2, w = c[0] / d, h = c[1] / d + (opts && opts.extra || 0);
+    var cell = el("div", "cell", parent);
+    cell.style.width = px(w); cell.style.height = px(h);
+    var foot = M["foot_" + size] / d;
+    if (!(opts && opts.walk)) {
+      var sh = el("div", "shadow", cell); sh.style.left = "50%"; sh.style.top = px(foot); sh.style.width = px(w * 0.55);
+    } else {
+      var dash = el("div", "dash moving", cell); dash.style.top = px(foot + 2);
+    }
+    var fl = el("div", "floor", cell); fl.style.top = px(foot);
+    var chr = el("div", "chr", cell); chr.style.width = px(w); chr.style.height = px(c[1] / d);
+    return { cell: cell, chr: chr, w: w, h: h, foot: foot };
+  }
+
+  // --- approach A: frame indices inside the strip ("a" main: own heads, "ap": base head pasted, "araw": no processing)
+  var PREFIX = { a: "", ap: "paste_", araw: "raw_" };
+  function idx(list, name) { var i = list.indexOf(name); return i < 0 ? list.indexOf(name.replace("_blink", "")) : i; }
+
+  function playA(st, key, action, r, size) {
+    var list = M[key + "_frames"], p = PREFIX[key], s = strip(st.chr, key, size);
+    var f = function (n) { return idx(list, p + n); };
+    var B = f("base"), K = f("blink"), TK = f("talk"), seq = [];
+    if (action === "idle") {
+      seq = blinks(r, 17300).map(function (x) { return [x[0] ? K : B, x[1]]; });
+    } else if (action === "talk") {
+      seq = talk(r, 13100).map(function (x) { return [x[0] === 1 ? TK : x[0] === 2 ? K : B, x[1]]; });
+    } else if (action === "wave") {
+      var W1 = f("wave"), W2 = f("wave2"), WB = f("wave_blink");
+      seq.push([B, between(r, 1400, 2200)]);
+      var swings = 4 + Math.floor(r() * 3), blinkAt = 1 + Math.floor(r() * 3);
+      for (var i = 0; i < swings; i++) {
+        seq.push([i === blinkAt ? WB : W1, between(r, 300, 400)]); seq.push([W2, between(r, 300, 400)]);
+      }
+      seq.push([B, between(r, 1600, 2600)]);
+    } else if (action === "walk") {
+      // contact A -> passing -> contact B -> passing; blinks every 2-5 cycles on a random frame of the cycle
+      var cyc = [f("walkA"), f("pass") >= 0 ? f("pass") : B, f("walkB"), f("pass2") >= 0 ? f("pass2") : B];
+      var cycB = [f("walkA_blink"), f("pass_blink"), f("walkB_blink"), f("pass2_blink")], dur = [180, 160, 180, 160];
+      var next = 2 + Math.floor(r() * 4);
+      for (var c = 0; c < 13; c++) {
+        var bl = c === next ? Math.floor(r() * 4) : -1; if (c === next) next += 2 + Math.floor(r() * 4);
+        for (var q = 0; q < 4; q++) seq.push([q === bl && cycB[q] >= 0 ? cycB[q] : cyc[q], dur[q]]);
+      }
+    }
+    animate(s.img, "transform", frameSteps(s.n, seq), false);
+  }
+
+  // --- approach B: puppet from parts
+  function part(parent, name, size) {
+    var p = M.parts[name + "_" + size];
+    if (!p) return null;
+    var img = el("img", "part", parent), d = 2;
+    img.src = "assets/b_" + name + "_" + size + ".webp"; img.alt = "";
+    img.style.left = px(p.x / d); img.style.top = px(p.y / d); img.style.width = px(p.w / d); img.style.height = px(p.h / d);
+    return img;
+  }
+  function origin(pt, d) { return px(pt[0] / d) + " " + px(pt[1] / d); }
+
+  function playB(st, action, r, size) {
+    var d = 2, foot = M["foot_" + size], cw = M["canvas_" + size][0];
+    var breath = el("div", "wrap", st.chr);
+    breath.style.transformOrigin = px(cw / 2 / d) + " " + px(foot / d);
+    var inhale = between(r, 1500, 2100), exhale = between(r, 1900, 2700), hold = between(r, 200, 600);
+    animate(breath, "transform", [["scale(1,1)", inhale], ["scale(1.004,1.009)", exhale], ["scale(1,1)", hold]], true);
+    part(breath, "neck", size);
+    var head = el("div", "wrap", breath);
+    head.style.transformOrigin = origin(M["neck_" + size], d);
+    part(head, "head", size);
+    var eyes = part(head, "eyes", size), mouth = part(head, "mouth", size);
+    part(breath, "body", size);
+    var arm = part(breath, "arm", size);
+    mouth.style.opacity = 0;
+    var tilt = [], t = 0;
+    while (t < 11700) {
+      var a = between(r, -2.2, 2.2), y = between(r, 0, 1.2), dur = between(r, 1300, 2600);
+      tilt.push(["rotate(" + a.toFixed(2) + "deg) translateY(" + y.toFixed(2) + "px)", dur]); t += dur;
+    }
+    animate(head, "transform", tilt, true);
+    if (action === "talk") {
+      var tr = talk(r, 13100);
+      animate(mouth, "opacity", tr.map(function (x) { return [x[0] === 1 ? 1 : 0, x[1]]; }), false);
+      animate(eyes, "opacity", tr.map(function (x) { return [x[0] === 2 ? 1 : 0, x[1]]; }), false);
+    } else {
+      animate(eyes, "opacity", blinks(r, action === "wave" ? 15100 : 17300).map(function (x) { return [x[0], x[1]]; }), false);
+    }
+    if (action === "wave") {
+      // attachment swap (as in Spine): the hanging arm flicks out, the raised arm replaces it, the forearm waves
+      // around the elbow under the static sleeve, then the hanging arm comes back
+      var pre = between(r, 1400, 2200), post = between(r, 1600, 2400), n = 5 + Math.floor(r() * 3), swing = [], sw = 0;
+      for (var i = 0; i < n; i++) { var dd = between(r, 300, 400); swing.push([(i % 2 ? "rotate(-9deg)" : "rotate(11deg)"), dd]); sw += dd; }
+      var up = el("div", "wrap", breath);
+      var fore = part(up, "forearm", size);
+      part(up, "arm_up", size);
+      var pf = M.parts["forearm_" + size], el_ = M["elbow_" + size], sh = M["shoulder_" + size], pa = M.parts["arm_" + size];
+      fore.style.transformOrigin = origin([el_[0] - pf.x, el_[1] - pf.y], d);
+      arm.style.transformOrigin = origin([sh[0] - pa.x, sh[1] - pa.y], d);
+      animate(up, "opacity", [[0, pre], [1, sw], [0, post]], false);
+      animate(arm, "opacity", [[1, pre], [0, sw], [1, post]], false);
+      animate(arm, "transform", [["rotate(0deg)", pre - 110], ["rotate(-28deg)", 110 + sw], ["rotate(-28deg)", 140], ["rotate(0deg)", post - 140]], true);
+      animate(fore, "transform", [["rotate(0deg)", pre]].concat(swing).concat([["rotate(0deg)", post]]), true);
+    }
+    if (action === "naive") { // the hanging arm rotated up around the shoulder: what a single-piece arm does
+      var sh2 = M["shoulder_" + size], pa2 = M.parts["arm_" + size];
+      arm.style.transformOrigin = origin([sh2[0] - pa2.x, sh2[1] - pa2.y], d);
+      animate(arm, "transform", [["rotate(0deg)", 1500], ["rotate(-150deg)", 360], ["rotate(-128deg)", 360], ["rotate(-150deg)", 360],
+                                  ["rotate(-128deg)", 360], ["rotate(-150deg)", 400], ["rotate(0deg)", 1800]], true);
+    }
+  }
+
+  // --- approach C: video frames (even timing at the clip's fps)
+  function playC(st, name, size) {
+    var key = "c_" + name, s = strip(st.chr, key, size), v = (M.video_meta || {})[name] || {}, fps = v.fps || 16;
+    var seq = [];
+    for (var i = 0; i < s.n; i++) seq.push([i, 1000 / fps]);
+    animate(s.img, "transform", frameSteps(s.n, seq), false);
+  }
+
+  // --- the grid
+  var cols = [
+    { id: "araw", title: "A · сырые правки", sub: "Qwen-Image 2.1, только альфа" },
+    { id: "a", title: "A · основной", sub: "свои головы; земля, масштаб, тон" },
+    { id: "ap", title: "A′ · голова базы", sub: "вклейка головы — отклонено" },
+    { id: "b", title: "B · кукла (cut-out)", sub: "один рисунок, CSS-трансформы" },
+    { id: "c", title: "C · видео", sub: "Wan 2.2 TI2V-5B" }
+  ];
+  var rows = [
+    { id: "idle", title: "Покой", sub: "моргание 2–6 с" },
+    { id: "talk", title: "Разговор", sub: "рот 110–190 мс" },
+    { id: "wave", title: "Взмах рукой", sub: "300–400 мс" },
+    { id: "walk", title: "Ходьба", sub: "на месте, 4 кадра" },
+    { id: "naive", title: "B: рука целиком", sub: "поворот от плеча" }
+  ];
+  var vids = M.video_meta || {};
+  function videoFor(action) { return Object.keys(vids).filter(function (k) { return vids[k].action === action; })[0]; }
+  var grid = document.getElementById("grid"), seed = 7;
+  var hr = el("tr", "", grid); el("th", "", hr);
+  cols.forEach(function (c) { var th = el("th", "", hr); th.innerHTML = c.title + "<small>" + c.sub + "</small>"; });
+  rows.forEach(function (rw) {
+    var tr = el("tr", "", grid), lab = el("td", "row", tr);
+    lab.innerHTML = rw.title + "<small>" + rw.sub + "</small>";
+    cols.forEach(function (c) {
+      var td = el("td", "", tr), r = rng(seed += 101);
+      var note = (N.cells || {})[c.id + ":" + rw.id];
+      var can = c.id === "b" ? ["idle", "talk", "wave", "naive"].indexOf(rw.id) >= 0
+              : c.id === "c" ? !!videoFor(rw.id) : rw.id !== "naive";
+      if (!can) {
+        var e = el("div", "cell empty", td), cv = M.canvas_L;
+        e.style.width = px(cv[0] / 2); e.style.height = px(cv[1] / 2);
+        e.textContent = note || "—";
+        return;
+      }
+      var st = stage(td, "L", { walk: rw.id === "walk" });
+      if (rw.id === "walk") { // ground marks move at the speed implied by the step length (no moonwalk)
+        var sp = (N.walkSpeed || 60), dash = st.cell.querySelector(".dash");
+        dash.style.animation = "dashmove " + (40 / sp * 1000).toFixed(0) + "ms linear infinite";
+      }
+      if (c.id === "b") playB(st, rw.id, r, "L");
+      else if (c.id === "c") playC(st, videoFor(rw.id), "L");
+      else playA(st, c.id, rw.id, r, "L");
+      if (note) { var nn = el("div", "note", st.cell); nn.textContent = note; }
+    });
+  });
+  sheet.sheet.insertRule("@keyframes dashmove{from{transform:translateX(0)}to{transform:translateX(40px)}}", sheet.sheet.cssRules.length);
+
+  // --- portrait for a character card (head and shoulders, larger)
+  var por = document.getElementById("portrait");
+  [["a", "A · кадры Qwen (свои лица)"], ["b", "B · кукла: наклон, моргание, рот"], ["c", "C · видео (кроп)"]].forEach(function (m, i) {
+    var fig = el("figure", "", por), cap = el("figcaption", "", fig), cv = M.canvas_P;
+    var cell = el("div", "cell", fig); cell.style.width = px(cv[0] / 2); cell.style.height = px(cv[1] / 2);
+    fig.insertBefore(cell, cap);
+    cap.textContent = m[1];
+    var holder = el("div", "chr", cell); holder.style.width = px(cv[0] / 2); holder.style.height = px(cv[1] / 2);
+    var st = { chr: holder }, r = rng(500 + i * 13);
+    if (m[0] === "a") playA(st, "a", "talk", r, "P");
+    else if (m[0] === "b") playB(st, "talk", r, "P");
+    else {
+      var v = videoFor("idle") || Object.keys(vids)[0];
+      if (v && M.strips["c_" + v + "_P"]) playC(st, v, "P"); else { cell.classList.add("empty"); cell.textContent = (N.cells || {})["c:portrait"] || "нет клипа"; }
+    }
+  });
+
+  // --- map scale
+  var map = document.getElementById("map");
+  [["a", "A · кадры"], ["b", "B · кукла"], ["c", "C · видео"]].forEach(function (m, i) {
+    var fig = el("figure", "", map), tile = el("div", "tile", fig), cap = el("figcaption", "", fig);
+    cap.textContent = m[1];
+    var cv = M.canvas_S, holder = el("div", "", tile);
+    holder.style.cssText = "position:absolute;left:" + (75 - cv[0] / 4) + "px;top:" + (98 - M.foot_S / 2) + "px;width:" + cv[0] / 2 + "px;height:" + cv[1] / 2 + "px";
+    var st = { chr: holder }, r = rng(900 + i * 37);
+    if (m[0] === "a") playA(st, "a", "talk", r, "S");
+    else if (m[0] === "b") playB(st, "talk", r, "S");
+    else { var v = videoFor("idle") || Object.keys(vids)[0]; if (v) playC(st, v, "S"); else cap.textContent += " (нет)"; }
+  });
+
+  // --- cards, metrics, recommendation (texts in assets/notes.js)
+  var cards = document.getElementById("cards");
+  (N.cards || []).forEach(function (c) {
+    var d = el("div", "card", cards), h = el("h3", "", d); h.textContent = c.title;
+    var dl = el("dl", "", d);
+    (c.facts || []).forEach(function (f) { el("dt", "", dl).textContent = f[0]; el("dd", "", dl).textContent = f[1]; });
+    var ul = el("ul", "", d);
+    (c.pros || []).forEach(function (p) { var li = el("li", "pro", ul); li.textContent = "+ " + p; });
+    (c.cons || []).forEach(function (p) { var li = el("li", "con", ul); li.textContent = "− " + p; });
+  });
+  // metrics table straight from the manifest (metrics_a.json, raw/c/video_meta.json)
+  var rowsM = [], f3 = function (v) { return v == null ? "—" : (+v).toFixed(3).replace(".", ","); };
+  var f1 = function (v) { return v == null ? "—" : (+v).toFixed(1).replace(".", ","); };
+  Object.keys(M.metrics_a || {}).forEach(function (k) {
+    var m = M.metrics_a[k];
+    rowsM.push(["A · " + k, f3(m.raw.head_scale) + " → " + f3(m.fixed.head_scale), f3(m.raw.height) + " → " + f3(m.fixed.height),
+                f3(m.raw.area) + " → " + f3(m.fixed.area), m.raw.ground + " → " + m.fixed.ground,
+                m.feet_slide_raw == null ? "—" : f1(m.feet_slide_raw) + " → " + f1(m.feet_slide),
+                f1(m.colour_drift_raw) + " → " + f1(m.colour_drift_fixed)]);
+  });
+  rowsM.push(["B · кукла", "1,000 (одна голова)", "1,000…1,009 (дыхание)", "1,000", "0", "0", "0"]);
+  Object.keys(vids).forEach(function (k) {
+    var v = vids[k];
+    rowsM.push(["C · " + k, f3(v.head_scale[0]) + "…" + f3(v.head_scale[1]), f3(v.height[0]) + "…" + f3(v.height[1]),
+                f3(v.area[0]) + "…" + f3(v.area[1]), v.ground_raw[0] + "…" + v.ground_raw[1], f1(v.feet_slide_raw),
+                "до " + f1(v.mad_vs_0_max) + " (попиксельно к кадру 0)"]);
+  });
+  var th = ["Кадр", "Голова, масштаб", "Рост фигуры", "Площадь силуэта", "Земля, px", "Скольжение ног, px", "Дрейф тона"];
+  document.getElementById("metrics").innerHTML = '<table class="m"><tr>' + th.map(function (x) { return "<th>" + x + "</th>"; }).join("") +
+    "</tr>" + rowsM.map(function (r) { return "<tr>" + r.map(function (x) { return "<td>" + x + "</td>"; }).join("") + "</tr>"; }).join("") +
+    "</table><p class=\"lead\" style=\"margin-top:6px\">Сырой → после обработки. Голова/рост/площадь — доля от базы; земля и скольжение — px на холсте 768×1024; " +
+    "тон — разница средних по каналам (0–255). Для C — разброс по кадрам клипа (камера стоит, поэтому стопы не фиксировали). " + (N.metricsNote || "") + "</p>";
+  if (N.rec) document.getElementById("rec").innerHTML = N.rec;
+})();
+</script>
+</body>
+</html>

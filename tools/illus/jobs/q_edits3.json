@@ -1,0 +1,20 @@
+[
+ {
+  "name": "q_pass2_241",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 241,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she stands on her near leg (the leg on the left side of the picture), which is straight, and lifts her other foot (the boot on the right side of the picture) a little off the ground behind the standing leg, that knee slightly bent, as in the middle of a step. Her arms hang relaxed close to the body. Same size, the standing boot stays on the same ground line, the head stays the same."
+ },
+ {
+  "name": "q_pass2_251",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 251,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she stands on her near leg (the leg on the left side of the picture), which is straight, and lifts her other foot (the boot on the right side of the picture) a little off the ground behind the standing leg, that knee slightly bent, as in the middle of a step. Her arms hang relaxed close to the body. Same size, the standing boot stays on the same ground line, the head stays the same."
+ }
+]

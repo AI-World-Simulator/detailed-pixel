@@ -1,0 +1,92 @@
+[
+ {
+  "name": "q_blink_201",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 201,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: her eyes are closed, drawn as gently curved dark eyelid lines, as in the middle of a blink. Nothing else changes."
+ },
+ {
+  "name": "q_talk_202",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 202,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: her mouth is open as if she is saying a word, a small open mouth showing a bit of the dark inside and the tongue. Nothing else changes."
+ },
+ {
+  "name": "q_wave_203",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 203,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she raises her left arm (the arm on the right side of the picture) and waves hello: the upper arm is out to the side, the forearm points up and the open hand is next to her head with the palm towards the viewer. The other arm stays down."
+ },
+ {
+  "name": "q_wave_213",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 213,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she raises her left arm (the arm on the right side of the picture) and waves hello: the upper arm is out to the side, the forearm points up and the open hand is next to her head with the palm towards the viewer. The other arm stays down."
+ },
+ {
+  "name": "q_walkA_204",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 204,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, mid-stride: her right leg (on the left side of the picture) steps forward and her left leg is behind her with the heel lifted, her arms swing naturally opposite to the legs. The same size, the boots stay on the same ground line."
+ },
+ {
+  "name": "q_walkA_214",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 214,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, mid-stride: her right leg (on the left side of the picture) steps forward and her left leg is behind her with the heel lifted, her arms swing naturally opposite to the legs. The same size, the boots stay on the same ground line."
+ },
+ {
+  "name": "q_walkB_205",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 205,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, mid-stride: her left leg (on the right side of the picture) steps forward and her right leg is behind her with the heel lifted, her arms swing naturally opposite to the legs. The same size, the boots stay on the same ground line."
+ },
+ {
+  "name": "q_walkB_215",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 215,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, mid-stride: her left leg (on the right side of the picture) steps forward and her right leg is behind her with the heel lifted, her arms swing naturally opposite to the legs. The same size, the boots stay on the same ground line."
+ },
+ {
+  "name": "q_noarm_206",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 206,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: her left arm (the arm on the right side of the picture) is completely removed, as if drawn without it: where the arm and hand were you now see the side of the yellow sweater, the side of the teal trousers and the plain grey background. Keep the other arm."
+ },
+ {
+  "name": "q_noarm_216",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 216,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: her left arm (the arm on the right side of the picture) is completely removed, as if drawn without it: where the arm and hand were you now see the side of the yellow sweater, the side of the teal trousers and the plain grey background. Keep the other arm."
+ }
+]

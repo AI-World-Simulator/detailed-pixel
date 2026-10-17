@@ -1,0 +1,38 @@
+[
+ {
+  "name": "q_walkB_225",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 225,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, mid-stride, the opposite step: her FAR leg (the darker teal leg, further from the viewer) is stepping forward in front, and her NEAR leg (the lighter one, closer to the viewer) is behind her with the heel lifted; her near arm swings forward and her far arm swings back. Same size, the boots stay on the same ground line, the head stays the same."
+ },
+ {
+  "name": "q_walkB_235",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 235,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, mid-stride, the opposite step: her FAR leg (the darker teal leg, further from the viewer) is stepping forward in front, and her NEAR leg (the lighter one, closer to the viewer) is behind her with the heel lifted; her near arm swings forward and her far arm swings back. Same size, the boots stay on the same ground line, the head stays the same."
+ },
+ {
+  "name": "q_pass_207",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 207,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, in the passing position of the walk: the near leg is straight under her body carrying the weight, the far leg is bent at the knee with that boot lifted a little off the ground beside it, both arms hang almost straight down. Same size, the head stays the same."
+ },
+ {
+  "name": "q_pass_217",
+  "kind": "qedit",
+  "images": [
+   "raw/base.png"
+  ],
+  "seed": 217,
+  "prompt": "Edit <image1>: keep the same illustrated character exactly as it is: same flat illustration style, same outlines, same colours, same face, same hair, same clothes, same body proportions and size, same position on the canvas, same plain light grey background. Change only this: she is walking towards the left side of the picture, in the passing position of the walk: the near leg is straight under her body carrying the weight, the far leg is bent at the knee with that boot lifted a little off the ground beside it, both arms hang almost straight down. Same size, the head stays the same."
+ }
+]

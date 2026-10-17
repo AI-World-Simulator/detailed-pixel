@@ -1,0 +1,259 @@
+{
+ "base": {
+  "neck": 299,
+  "collar": 304,
+  "foot": 966,
+  "head_box": [
+   238,
+   65,
+   500,
+   307
+  ],
+  "boots": [
+   321.5994504333122,
+   496.1951958450552
+  ]
+ },
+ "frames": {
+  "blink": {
+   "source": "q_blink_201",
+   "raw": {
+    "head_scale": 1.0,
+    "head_match": 0.878,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.0,
+    "area": 1.0,
+    "ground": 0
+   },
+   "feet_slide_raw": 0.4,
+   "scale_fix": 1.0,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.874,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.0,
+    "area": 1.0,
+    "ground": 0
+   },
+   "colour_drift_raw": 1.92,
+   "colour_drift_fixed": 0.05,
+   "feet_slide": 0.4,
+   "face_mad_info": 18.82
+  },
+  "talk": {
+   "source": "q_talk_202",
+   "raw": {
+    "head_scale": 1.0,
+    "head_match": 0.963,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.001,
+    "area": 1.001,
+    "ground": 0
+   },
+   "feet_slide_raw": 0.7,
+   "scale_fix": 1.0,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.956,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.001,
+    "area": 1.001,
+    "ground": 0
+   },
+   "colour_drift_raw": 1.49,
+   "colour_drift_fixed": 0.05,
+   "feet_slide": 0.7,
+   "face_mad_info": 12.53
+  },
+  "wave": {
+   "source": "q_wave_203",
+   "raw": {
+    "head_scale": 1.0,
+    "head_match": 0.99,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.0,
+    "area": 1.013,
+    "ground": 1
+   },
+   "feet_slide_raw": 0.5,
+   "scale_fix": 1.0,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.981,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.0,
+    "area": 1.013,
+    "ground": 0
+   },
+   "colour_drift_raw": 2.86,
+   "colour_drift_fixed": 0.08,
+   "feet_slide": 0.5,
+   "blink_twin": true
+  },
+  "wave2": {
+   "source": "q_wave_213",
+   "raw": {
+    "head_scale": 1.0,
+    "head_match": 0.992,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.0,
+    "area": 1.021,
+    "ground": 1
+   },
+   "feet_slide_raw": 0.7,
+   "scale_fix": 1.0,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.965,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.0,
+    "area": 1.021,
+    "ground": 0
+   },
+   "colour_drift_raw": 2.2,
+   "colour_drift_fixed": 0.07,
+   "feet_slide": 1.2,
+   "blink_twin": true
+  },
+  "walkA": {
+   "source": "q_walkA_204",
+   "raw": {
+    "head_scale": 1.0,
+    "head_match": 0.965,
+    "head_shift": [
+     2.0,
+     0.0
+    ],
+    "height": 0.999,
+    "area": 0.963,
+    "ground": 1
+   },
+   "scale_fix": 1.0,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.951,
+    "head_shift": [
+     0.0,
+     2.0
+    ],
+    "height": 0.999,
+    "area": 0.963,
+    "ground": 0
+   },
+   "colour_drift_raw": 2.01,
+   "colour_drift_fixed": 0.1,
+   "blink_twin": true
+  },
+  "walkB": {
+   "source": "q_walkB_235",
+   "raw": {
+    "head_scale": 0.96,
+    "head_match": 0.936,
+    "head_shift": [
+     -1.0,
+     1.0
+    ],
+    "height": 0.974,
+    "area": 0.912,
+    "ground": 20
+   },
+   "scale_fix": 1.025,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.965,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 0.999,
+    "area": 0.959,
+    "ground": 0
+   },
+   "colour_drift_raw": 3.56,
+   "colour_drift_fixed": 0.1,
+   "blink_twin": true
+  },
+  "pass": {
+   "source": "q_pass2_241",
+   "raw": {
+    "head_scale": 1.0,
+    "head_match": 0.997,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 0.991,
+    "area": 0.987,
+    "ground": 8
+   },
+   "scale_fix": 1.0,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.993,
+    "head_shift": [
+     0.0,
+     8.0
+    ],
+    "height": 0.991,
+    "area": 0.987,
+    "ground": 0
+   },
+   "colour_drift_raw": 1.62,
+   "colour_drift_fixed": 0.09,
+   "blink_twin": true
+  },
+  "pass2": {
+   "source": "q_pass3_261",
+   "raw": {
+    "head_scale": 0.98,
+    "head_match": 0.96,
+    "head_shift": [
+     -3.0,
+     -8.0
+    ],
+    "height": 0.984,
+    "area": 0.968,
+    "ground": 21
+   },
+   "scale_fix": 1.016,
+   "fixed": {
+    "head_scale": 1.0,
+    "head_match": 0.982,
+    "head_shift": [
+     0.0,
+     0.0
+    ],
+    "height": 1.0,
+    "area": 1.0,
+    "ground": 0
+   },
+   "colour_drift_raw": 1.05,
+   "colour_drift_fixed": 0.09,
+   "blink_twin": true
+  }
+ }
+}

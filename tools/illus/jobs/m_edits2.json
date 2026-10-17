@@ -1,0 +1,30 @@
+[
+ {
+  "name": "m_q_walkB_225",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_walkB_225.png"
+  ]
+ },
+ {
+  "name": "m_q_walkB_235",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_walkB_235.png"
+  ]
+ },
+ {
+  "name": "m_q_pass_207",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_pass_207.png"
+  ]
+ },
+ {
+  "name": "m_q_pass_217",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_pass_217.png"
+  ]
+ }
+]

@@ -1,0 +1,16 @@
+[
+ {
+  "name": "m_q_pass2_241",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_pass2_241.png"
+  ]
+ },
+ {
+  "name": "m_q_pass2_251",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_pass2_251.png"
+  ]
+ }
+]

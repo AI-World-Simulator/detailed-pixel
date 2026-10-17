@@ -1,0 +1,16 @@
+[
+ {
+  "name": "v_idle",
+  "kind": "wan",
+  "images": [
+   "raw/base.png"
+  ],
+  "prompt": "A 2D flat cartoon illustration of a young woman with an auburn bob haircut, mustard yellow sweater, teal trousers and brown boots, standing on the spot in a relaxed idle pose. She breathes gently, blinks once, tilts her head slightly and smiles, her hair sways a little. Her feet stay planted on the ground, she does not walk. Static camera, fixed framing, full body visible, plain flat light grey background, clean flat shapes, consistent character.",
+  "w": 576,
+  "h": 768,
+  "frames": 33,
+  "steps": 20,
+  "cfg": 5.0,
+  "seed": 31
+ }
+]

@@ -1,0 +1,72 @@
+[
+ {
+  "name": "m_q_blink_201",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_blink_201.png"
+  ]
+ },
+ {
+  "name": "m_q_talk_202",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_talk_202.png"
+  ]
+ },
+ {
+  "name": "m_q_wave_203",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_wave_203.png"
+  ]
+ },
+ {
+  "name": "m_q_wave_213",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_wave_213.png"
+  ]
+ },
+ {
+  "name": "m_q_walkA_204",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_walkA_204.png"
+  ]
+ },
+ {
+  "name": "m_q_walkA_214",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_walkA_214.png"
+  ]
+ },
+ {
+  "name": "m_q_walkB_205",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_walkB_205.png"
+  ]
+ },
+ {
+  "name": "m_q_walkB_215",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_walkB_215.png"
+  ]
+ },
+ {
+  "name": "m_q_noarm_206",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_noarm_206.png"
+  ]
+ },
+ {
+  "name": "m_q_noarm_216",
+  "kind": "bgmask",
+  "images": [
+   "raw/q/q_noarm_216.png"
+  ]
+ }
+]

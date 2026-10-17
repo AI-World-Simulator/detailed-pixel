@@ -1,0 +1,16 @@
+[
+ {
+  "name": "v_wave",
+  "kind": "wan",
+  "images": [
+   "raw/base.png"
+  ],
+  "prompt": "A 2D flat cartoon illustration of a young woman with an auburn bob haircut, mustard yellow sweater, teal trousers and brown boots, standing on the spot. She raises her left hand (on the right side of the picture) next to her head and waves hello twice with a friendly smile, then lowers the arm again. Her feet stay planted on the ground. Static camera, fixed framing, full body visible, plain flat light grey background, clean flat shapes, consistent character.",
+  "w": 576,
+  "h": 768,
+  "frames": 49,
+  "steps": 20,
+  "cfg": 5.0,
+  "seed": 32
+ }
+]
