@@ -32,11 +32,11 @@
 .lb.flip::before { left: auto; right: calc(var(--s) * 3px); }
 .lb.flip::after { left: auto; right: calc(var(--s) * 2px); }
 
-/* ground: sidewalk slabs; .scroll moves them one slab per 0.4 s (30 art px/s = 2 frames per px at 60 Hz, same as the belts) */
+/* ground: sidewalk slabs; .scroll moves them one slab per 0.6 s (20 art px/s = 3 frames per px at 60 Hz, same as the belts) */
 .lgnd { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--s) * 5px); overflow: hidden; background: #2c3546; }
 .lgnd::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: calc(100% + var(--s) * 12px); border-top: calc(var(--s) * 1px) solid #5b6a82;
   background: repeating-linear-gradient(90deg, #3c475a 0 calc(var(--s) * 11px), #2c3546 calc(var(--s) * 11px) calc(var(--s) * 12px)); }
-.lgnd.scroll::before { animation: ldr-slab 0.4s steps(12) infinite; }
+.lgnd.scroll::before { animation: ldr-slab 0.6s steps(12) infinite; }
 @keyframes ldr-slab { to { transform: translateX(calc(var(--s) * -12px)); } }
 
 /* crew: land under a sliding sea, mountains/houses rising out of a clip, road slabs appearing one by one */
@@ -69,9 +69,9 @@
 
 /* walk: scenery belts scroll one art pixel per step; the belt of the current step fades in */
 .lbelt { position: absolute; left: 0; bottom: calc(var(--s) * 5px); width: calc(var(--s) * 336px); height: calc(var(--s) * 64px);
-  opacity: 0; transition: opacity 0.6s; animation: ldr-belt 5.6s steps(168) infinite; }   /* 30 art px/s, with the ground */
+  opacity: 0; transition: opacity 0.6s; animation: ldr-belt 8.4s steps(168) infinite; }   /* 20 art px/s, with the ground */
 .lbelt.on { opacity: 1; }
-.lbelt.far { animation-duration: 11.2s; }                      /* far plane: 15 px/s = 4 frames per px at 60 Hz */
+.lbelt.far { animation-duration: 16.8s; }                      /* far plane: 10 px/s = 6 frames per px at 60 Hz */
 @keyframes ldr-belt { to { transform: translateX(calc(var(--s) * -168px)); } }
 .lclip.sky { top: 0; bottom: 0; }
 .ldrift { animation: ldr-drift 24s steps(240) infinite; } .ldrift.slow { animation-duration: 40s; }

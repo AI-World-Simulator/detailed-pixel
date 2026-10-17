@@ -29,6 +29,24 @@ ANIMS = {   # what each service is asked for; our own frames to compare against
     "wave": {"ours": ["idle", "wave", "idle", "wave"], "pl": "waves hello with the right hand, body still",
              "rd_style": "rd_advanced_animation__custom_action", "rd": "waves hello with the right hand, body still", "frames": 6},
 }
+# loader clips (PixelLab only, loader=True): not part of the side-by-side report
+CLEAN = (" Clean character animation only: no visual effects, no particles, no sparkles, no motion lines, no smears,"
+         " no extra objects unless mentioned; the character stays fully on the canvas.")
+LOADER = {
+    "idle": ("standing idle in place: gentle breathing, blinks once, hair sways a little", 8, ["woman", "builder", "oldman", "boy"]),
+    "walkR": ("walks to the right in place, side view facing right, natural stride, arms swinging", 8, ["woman", "builder", "oldman", "boy"]),
+    "talk": ("talks in place: mouth opens and closes, small head nods and hand gestures", 8, ["woman", "builder"]),
+    "laugh": ("laughs happily in place: eyes squeezed, shoulders shaking, hand near the belly", 6, ["woman", "builder", "boy"]),
+    "paint": ("paints the ground with a big paint brush held in both hands, steady brush strokes up and down", 8, ["woman"]),
+    "dig": ("digs with a shovel: pushes the shovel into the ground, lifts dirt and tosses it aside", 8, ["builder"]),
+    "carry": ("carries a wooden crate in both arms, standing, the crate bounces slightly", 6, ["builder"]),
+    "cheer": ("jumps for joy with both arms raised, lands softly and smiles", 8, ["boy"]),
+    "read": ("reads an open newspaper held in both hands, turns a page, nods slightly", 8, ["oldman"]),
+    "waveC": ("waves hello with the right hand, body still, friendly smile", 6, ["woman", "builder", "oldman", "boy"]),
+    "crouchC": ("crouches down, places a small grey stone on the ground, stands back up", 8, ["boy"]),
+}
+for _k, (_txt, _n, _who) in LOADER.items():
+    ANIMS[_k] = {"ours": ["idle"], "pl": _txt + CLEAN, "frames": _n, "who": _who, "loader": True}
 PX = ROOT / "tools" / "loader" / "px" / "chars"
 IN, OUT, REP = HERE / "in", HERE / "out", HERE / "report"
 JOURNAL = HERE / "journal.jsonl"
@@ -189,6 +207,8 @@ def cmd_run(args):
         sys.exit(f"no key for {svc} in ~/.config/detailed-pixel/cloud.env")
     for ch in chars:
         for an in anims:
+            if ch not in ANIMS[an].get("who", CHARS):
+                continue
             d = OUT / svc / ch / an
             if (d / "frame_00.png").exists():
                 print(f"{svc} {ch}/{an}: already there, skipped"); continue
@@ -259,7 +279,7 @@ def metrics(ch, frames):
 
 def cmd_report():
     REP.mkdir(exist_ok=True); S = 4; summary = {}
-    for an, spec in ANIMS.items():
+    for an, spec in [(k, v) for k, v in ANIMS.items() if not v.get("loader")]:
         rows = []
         for ch in CHARS:
             rows.append((f"{ch} ours", [ours_padded(ch, f) for f in spec["ours"]]))
@@ -300,7 +320,7 @@ def cmd_page():
             ("rd", "Retro Diffusion"), ("rd+ours", "Retro Diffusion + наша обработка")]
     MS = {"walk": 130, "crouch": 150, "wave": 150}
     data, metr = {}, json.load(open(REP / "metrics.json")) if (REP / "metrics.json").exists() else {}
-    for an, spec in ANIMS.items():
+    for an, spec in [(k, v) for k, v in ANIMS.items() if not v.get("loader")]:
         for ch in CHARS:
             row = {"ours": [uri(ours_padded(ch, f)) for f in spec["ours"]]}
             for svc in ("pixellab", "rd"):
