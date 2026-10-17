@@ -4,3 +4,4 @@ out/
 report/
 journal.jsonl
 compare.html
+*.log
